@@ -1,0 +1,119 @@
+#include <ESP8266WiFi.h> //https://github.com/esp8266/Arduino
+
+//needed for library
+#include <DNSServer.h>
+#include <ESP8266WebServer.h>
+#include <WiFiManager.h> //https://github.com/tzapu/WiFiManager
+#include <PubSubClient.h>
+#include "relayDevice.hpp"
+#include "mqttClient.hpp"
+#include "helper.hpp"
+#include <arduino-timer.h>
+
+#define LED D2
+// Uncomment the type of sensor in use:
+
+unsigned long previousMillis = 0;
+unsigned long interval = 10000;
+
+const char *kitchenServer = "192.168.1.21";
+const char *bedRoomServer = "192.168.1.80";
+const int mqttPort = 1883;
+
+// void callback(char *topic, byte *payload, unsigned int length)
+// {
+
+//     Serial.print("Message arrived [");
+//     Serial.print(topic);
+//     Serial.print("] ");
+//     for (int i = 0; i < length; i++)
+//     {
+//         Serial.print((char)payload[i]);
+//     }
+//     Serial.println("\n--------------");
+// }
+
+void callback_(char *topic, byte *payload, unsigned int length)
+{
+
+    Serial.print("Message arrived_ [");
+    Serial.print(topic);
+    Serial.print("] ");
+    for (int i = 0; i < length; i++)
+    {
+        Serial.print((char)payload[i]);
+    }
+    Serial.println("\n---------------");
+}
+
+WiFiClient espClient;
+// PubSubClient client(kitchenServer, mqttPort, helper::mqttCallback, espClient);
+// PubSubClient client_(bedRoomServer, mqttPort, callback_, espClient);
+
+mqtt::mqttClient kitchenClient(kitchenServer, "#");
+// mqtt::mqttClient bedRoomClient(bedRoomServer, "#");
+auto timer = timer_create_default(); // create a timer with default settings
+
+
+void setup()
+{
+    Serial.println("start of setup");
+    pinMode(10,OUTPUT);
+    // put your setup code here, to run once:
+    Serial.begin(115200);
+    pinMode(LED, OUTPUT);
+    digitalWrite(LED, LOW);
+    //WiFiManager
+    //Local intialization. Once its business is done, there is no need to keep it around
+    WiFiManager wifiManager;
+    //reset saved settings
+    // wifiManager.resetSettings();
+
+    //set custom ip for portal
+    //wifiManager.setAPStaticIPConfig(IPAddress(10,0,1,1), IPAddress(10,0,1,1), IPAddress(255,255,255,0));
+
+    //fetches ssid and pass from eeprom and tries to connect
+    //if it does not connect it starts an access point with the specified name
+    //here  "AutoConnectAP"
+    //and goes into a blocking loop awaiting configuration
+    wifiManager.autoConnect("NodeMCU V3", "12345678__");
+    //or use this for auto generated name ESP + ChipID
+    //wifiManager.autoConnect();
+
+    //if you get here you have connected to the WiFi
+    Serial.println("connected to WIFI network.");
+
+    kitchenClient.init();
+    // timer.every(100, [](void*) -> bool
+    // {
+    //     kitchenClient.loop();
+    //     return true;
+    // });
+    // Serial.println("end of setup.");
+}
+
+int t;
+int h;
+void loop()
+{
+    // Serial.println("start of loop");
+    // timer.tick();
+    kitchenClient.loop();
+    // Serial.println("after .loop");
+    unsigned long currentMillis = millis();
+    if (currentMillis - previousMillis >= interval)
+    {
+        // save the last time you updated the DHT values
+        previousMillis = currentMillis;
+        if (1)
+        {
+            delay(2000);
+            t++;
+            h++;
+            Serial.println("Temperature : " + String(t));
+            Serial.println("Humidity : " + String(h));
+            String toSend = String(t) + "," + String(h);
+            kitchenClient.publish("data", toSend.c_str());
+        }
+    }
+}
