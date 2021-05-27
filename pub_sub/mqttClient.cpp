@@ -16,10 +16,6 @@
 //---------------------------------------------------------------------------
 // Functions
 //---------------------------------------------------------------------------
-bool toggle_led(void *) {
-  digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN)); // toggle the LED
-  return true; // repeat? true
-}
 
 namespace mqtt
 {
@@ -32,16 +28,17 @@ namespace mqtt
     void mqttClient::init()
     {
         //generate random clientID string
-        // std::string clientID = helper::random_string();
+        String clientId = "ESP8266Client-";
+        clientId += String(random(0xffff), HEX);
 
-        // Serial.print("Generated random client ID: ");
-        // Serial.println(clientID.c_str());
+        Serial.print("Generated random client ID: ");
+        Serial.println(clientId.c_str());
 
         while (!m_pubSubClient.connected())
         {
             Serial.println("Connecting to MQTT...");
 
-            if (m_pubSubClient.connect("ESP8266Client"))
+            if (m_pubSubClient.connect(clientId.c_str()))
             {
                 m_pubSubClient.subscribe("#");
                 Serial.println("connected");
@@ -54,7 +51,6 @@ namespace mqtt
                 delay(2000);
             }
         }
-        // Serial.println("end of setup");
     }
 
     void mqttClient::loop()
