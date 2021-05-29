@@ -12,6 +12,14 @@
 #include "relayDevice.hpp"
 
 
+
+//---------------------------------------------------------------------------
+//! \brief vector containing all the GPIO already in use
+//! \note  this is not a thread safe implementation but the vector will only
+//! be used when creating the object so it's ok to leave it this way.
+//!
+static std::vector<uint8_t> alreadyUsedGPIOs;
+
 //---------------------------------------------------------------------------
 // Functions
 //---------------------------------------------------------------------------
@@ -77,6 +85,7 @@ namespace bathRoom
 
     void bathRoomGPIO::toggel()
     {
+        Serial.printf("Toggeling pin %d from state %d to %d\n",m_GPIOPin,m_state,!m_state);
         m_state = !m_state;
         digitalWrite(m_GPIOPin, m_state);
     }

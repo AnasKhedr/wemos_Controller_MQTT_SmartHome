@@ -48,13 +48,6 @@ namespace bathRoom
         const GPIOtype m_type;
 
         //---------------------------------------------------------------------------
-        //! \brief vector containing all the GPIO already in use
-        //! \note  this is not a thread safe implementation but the vector will only
-        //! be used when creating the object so it's ok to leave it this way.
-        //!
-        static std::vector<uint8_t> alreadyUsedGPIOs;
-
-        //---------------------------------------------------------------------------
         //! \brief check if the pin number from the parameter is already used by someone
         //! else or not
         //! \return true    - if pin is already used by someone else

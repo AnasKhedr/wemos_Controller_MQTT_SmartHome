@@ -48,4 +48,9 @@ namespace helper
         return str.substr(0, 8);    // assumes 32 < number of characters in str
     }
 
+    // class logger
+    // {
+    //     std::string operation<<()
+    // };
+
 }   // namespace helper

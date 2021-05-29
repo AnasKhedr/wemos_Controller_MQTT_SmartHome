@@ -33,6 +33,7 @@ namespace mqtt
 
         Serial.print("Generated random client ID: ");
         Serial.println(clientId.c_str());
+        // Serial.printf(" to connect to broker: %s\n", ip);
 
         while (!m_pubSubClient.connected())
         {

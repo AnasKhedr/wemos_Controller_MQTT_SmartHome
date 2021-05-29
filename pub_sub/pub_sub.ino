@@ -9,6 +9,8 @@
 #include "mqttClient.hpp"
 #include "helper.hpp"
 #include <arduino-timer.h>
+#include "relayDevice.hpp"
+#include "Application.hpp"
 
 #define LED D2
 // Uncomment the type of sensor in use:
@@ -19,32 +21,9 @@ unsigned long interval = 10000;
 const char *kitchenServer = "192.168.1.21";
 const char *bedRoomServer = "192.168.1.80";
 const int mqttPort = 1883;
+int t;
+int h;
 
-// void callback(char *topic, byte *payload, unsigned int length)
-// {
-
-//     Serial.print("Message arrived [");
-//     Serial.print(topic);
-//     Serial.print("] ");
-//     for (int i = 0; i < length; i++)
-//     {
-//         Serial.print((char)payload[i]);
-//     }
-//     Serial.println("\n--------------");
-// }
-
-void callback_(char *topic, byte *payload, unsigned int length)
-{
-
-    Serial.print("Message arrived_ [");
-    Serial.print(topic);
-    Serial.print("] ");
-    for (int i = 0; i < length; i++)
-    {
-        Serial.print((char)payload[i]);
-    }
-    Serial.println("\n---------------");
-}
 
 WiFiClient espClient;
 // PubSubClient client(kitchenServer, mqttPort, helper::mqttCallback, espClient);
@@ -52,15 +31,17 @@ WiFiClient espClient;
 
 mqtt::mqttClient kitchenClient(kitchenServer, "#");
 // mqtt::mqttClient bedRoomClient(bedRoomServer, "#");
-auto timer = timer_create_default(); // create a timer with default settings
+Timer<2> timer; // = timer_create_default(); // create a timer with default settings
 
+                            //5 means GPIO5 -> D1
+bathRoom::bathRoomGPIO Light1(5,bathRoom::GPIOtype::control);
 
 void setup()
 {
-    Serial.println("start of setup");
     pinMode(10,OUTPUT);
     // put your setup code here, to run once:
     Serial.begin(115200);
+    Serial.println("start of setup");
     pinMode(LED, OUTPUT);
     digitalWrite(LED, LOW);
     //WiFiManager
@@ -89,31 +70,52 @@ void setup()
     //     kitchenClient.loop();
     //     return true;
     // });
+
+    timer.every(1000,[](void*) -> bool
+    {
+        Serial.println("lambda expression:");
+        t++;
+        h++;
+        Serial.println("Temp : " + String(t));
+        Serial.println("Humi : " + String(h));
+        String toSend = String(t) + "," + String(h);
+        kitchenClient.publish("data", toSend.c_str());
+
+        return true;
+    });
+
+    timer.every(1000, [](void*) -> bool
+    {
+        Light1.toggel();
+        return true;
+    });
     // Serial.println("end of setup.");
 }
 
-int t;
-int h;
 void loop()
 {
     // Serial.println("start of loop");
-    // timer.tick();
+    timer.tick();
+    // Light1.toggel();
+    // delay(2000);
     kitchenClient.loop();
     // Serial.println("after .loop");
-    unsigned long currentMillis = millis();
-    if (currentMillis - previousMillis >= interval)
-    {
-        // save the last time you updated the DHT values
-        previousMillis = currentMillis;
-        if (1)
-        {
-            delay(2000);
-            t++;
-            h++;
-            Serial.println("Temperature : " + String(t));
-            Serial.println("Humidity : " + String(h));
-            String toSend = String(t) + "," + String(h);
-            kitchenClient.publish("data", toSend.c_str());
-        }
-    }
+
+    // unsigned long currentMillis = millis();
+    // if (currentMillis - previousMillis >= interval)
+    // {
+    //     // save the last time you updated the DHT values
+    //     previousMillis = currentMillis;
+    //     if (1)
+    //     {
+    //         delay(2000);
+    //         Serial.println("main loop:");
+    //         t++;
+    //         h++;
+    //         Serial.println("Temperature : " + String(t));
+    //         Serial.println("Humidity : " + String(h));
+    //         String toSend = String(t) + "," + String(h);
+    //         kitchenClient.publish("data", toSend.c_str());
+    //     }
+    // }
 }
