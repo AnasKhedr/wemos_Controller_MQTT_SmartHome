@@ -17,6 +17,7 @@
 #include <vector>
 #include <Arduino.h>            //the compiler will faile to regonize pinMode and OUTPUT without Arduino.h
 #include "ISimpleDevice.hpp"
+#include "helper.hpp"
 
 
 //---------------------------------------------------------------------------
@@ -34,26 +35,9 @@ namespace bathRoom
         read        //!<
     };
 
-    class bathRoomGPIO : public ISimpleDevice
+    class bathRoomGPIO  : public ISimpleDevice
+                        // , public Iactor
     {
-    private:
-        //---------------------------------------------------------------------------
-        //! \brief
-        //!
-        const uint8_t m_GPIOPin;
-
-        //---------------------------------------------------------------------------
-        //! \brief
-        //!
-        const GPIOtype m_type;
-
-        //---------------------------------------------------------------------------
-        //! \brief check if the pin number from the parameter is already used by someone
-        //! else or not
-        //! \return true    - if pin is already used by someone else
-        //! \return false   - if pin is not used and can be used
-        //!
-        bool canUsePin(const uint8_t& newPin) const;
 
     public:
 
@@ -66,6 +50,7 @@ namespace bathRoom
         //!
         bathRoomGPIO(const uint8_t GPIOPin,
                     const GPIOtype type,
+                    const std::string topic = "NULL",
                     const uint8_t internalResistor = INPUT_PULLUP);
 
         //---------------------------------------------------------------------------
@@ -88,6 +73,28 @@ namespace bathRoom
         //! \brief toggel device state functionality implementation
         //!
         virtual void toggel() override;
+
+        void act(const helper::actions& action);
+
+
+    private:
+        //---------------------------------------------------------------------------
+        //! \brief
+        //!
+        const uint8_t m_GPIOPin;
+
+        //---------------------------------------------------------------------------
+        //! \brief
+        //!
+        const GPIOtype m_type;
+
+        //---------------------------------------------------------------------------
+        //! \brief check if the pin number from the parameter is already used by someone
+        //! else or not
+        //! \return true    - if pin is already used by someone else
+        //! \return false   - if pin is not used and can be used
+        //!
+        bool canUsePin(const uint8_t& newPin) const;
     };
 
 } // namespace bathRoom

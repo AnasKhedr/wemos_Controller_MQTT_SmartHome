@@ -18,6 +18,7 @@
 #include <PubSubClient.h>
 #include <ESP8266WiFi.h> //https://github.com/esp8266/Arduino
 #include "helper.hpp"
+#include "ImqttObserver.hpp"
 
 
 
@@ -29,15 +30,28 @@ namespace mqtt
 {
     typedef std::function<void(char*, uint8_t*, unsigned int)> callbackType;
 
+    //---------------------------------------------------------------------------
+    //! \brief default callback, has no use except for debugging
+    //! this function will be used in case of no callback was provided
+    //! \param topic
+    //! \param payload
+    //! \param length
+    //!
+    void mqttCallback(char *topic, uint8_t *payload, unsigned int length);
+
     class mqttClient
     {
         // using callback = std::function<void(char*, uint8_t*, unsigned int)>;
         public:
-            mqttClient(std::string ip, std::string topic, callbackType = helper::mqttCallback);
+
+            mqttClient(std::string ip, std::string topic, callbackType callback = mqttCallback);
             // mqttClient(const char* ip, const char* topic, callback = helper::mqttCallback);
             // Data members
 
             void publish(const std::string& Topic, const std::string& payload);
+
+            template<class T>
+            void publish(const std::string& Topic, const T& payload);
 
             void loop();
             void init();
@@ -45,9 +59,14 @@ namespace mqtt
             PubSubClient& getClient();
 
         private:
+
+            // Data members
             WiFiClient m_wifiClient;
             PubSubClient m_pubSubClient;
-            // Data members
+            std::string m_brokerIp;
+
+            std::vector<IObserver> m_observersList;
+
 
     };
 

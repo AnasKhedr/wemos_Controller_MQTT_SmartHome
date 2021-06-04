@@ -6,6 +6,15 @@
 //! \date 24-May-2021
 //! \copyright This work is licensed under a Creative Commons Attribution 4.0 International License. Copyright (c) 2021
 
+
+//---------------------------------------------------------------------------
+// Includes
+//---------------------------------------------------------------------------
+#include <string>
+
+//---------------------------------------------------------------------------
+// Functions
+//---------------------------------------------------------------------------
 class ISimpleDevice
 {
     // enum deviceStates : bool
@@ -38,6 +47,12 @@ class ISimpleDevice
     protected:
         // deviceStates m_state;
         bool m_state;
+
+        //---------------------------------------------------------------------------
+        //! \brief handle string representing the device name in the mqtt message
+        //! that will be used to control the device.
+        //!
+        std::string m_handle;
 };
 
 // More Fuctions

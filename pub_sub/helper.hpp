@@ -17,17 +17,32 @@
 //---------------------------------------------------------------------------
 #include <Arduino.h>
 #include <string>
+#include <PubSubClient.h>
+#include <limits>   // for numeric_limits
 // #include <pair
 
 namespace helper
 {
+    //---------------------------------------------------------------------------
+    //! \brief for an controlling the devices (relay module)
+    //!
+    enum actions : uint8_t
+    {
+        TURN_OFF = 0,       /*!< turn off the device */
+        TURN_ON = 1,        /*!< turn on the device */
+        TOGGEL = 2,         /*!< turn on the device if it's off and turn it off if it's on */
+        // COUNT = 3,      /*!< the number of elements in this enum */
+        UNKOWN = std::numeric_limits<uint8_t>::max()
+    };
     // std::function<void (char* , byte* , unsigned int)> mqttCallback;
 
     // std::pair<std::string, double> mqttCallback(char *topic, byte *payload, unsigned int length)
-    void mqttCallback(char *topic, byte *payload, unsigned int length);
 
     std::string random_string();
 
+    std::string toString(int mqttFailedState);
+
+    void printMqttMessage(const std::string& topic, const std::string message);
 
 }   // namespace helper
 

@@ -18,35 +18,39 @@
 unsigned long previousMillis = 0;
 unsigned long interval = 10000;
 
-const char *kitchenServer = "192.168.1.21";
-const char *bedRoomServer = "192.168.1.80";
+const char *kitchenServer = "192.168.1.80";
+const char *bedRoomServer = "192.168.1.21";
 const int mqttPort = 1883;
 int t;
 int h;
 
+app::Application myApp;
 
-WiFiClient espClient;
+// WiFiClient espClient;
 // PubSubClient client(kitchenServer, mqttPort, helper::mqttCallback, espClient);
 // PubSubClient client_(bedRoomServer, mqttPort, callback_, espClient);
 
-mqtt::mqttClient kitchenClient(kitchenServer, "#");
+// mqtt::mqttClient kitchenClient(kitchenServer, "#");
 // mqtt::mqttClient bedRoomClient(bedRoomServer, "#");
-Timer<2> timer; // = timer_create_default(); // create a timer with default settings
+// Timer<2> timer; // = timer_create_default(); // create a timer with default settings
 
                             //5 means GPIO5 -> D1
-bathRoom::bathRoomGPIO Light1(5,bathRoom::GPIOtype::control);
+// bathRoom::bathRoomGPIO Light1(5,bathRoom::GPIOtype::control, "Light5");
+// bathRoom::bathRoomGPIO Light2(D6,bathRoom::GPIOtype::control, "Light6");
+// bathRoom::bathRoomGPIO Light3(D7,bathRoom::GPIOtype::control, "Light7");
 
 void setup()
 {
-    pinMode(10,OUTPUT);
+    // pinMode(10,OUTPUT);
     // put your setup code here, to run once:
-    Serial.begin(115200);
+    // Serial.begin(115200);
     Serial.println("start of setup");
+    delay(200);
     pinMode(LED, OUTPUT);
     digitalWrite(LED, LOW);
     //WiFiManager
     //Local intialization. Once its business is done, there is no need to keep it around
-    WiFiManager wifiManager;
+    // WiFiManager wifiManager;
     //reset saved settings
     // wifiManager.resetSettings();
 
@@ -57,65 +61,71 @@ void setup()
     //if it does not connect it starts an access point with the specified name
     //here  "AutoConnectAP"
     //and goes into a blocking loop awaiting configuration
-    wifiManager.autoConnect("NodeMCU V3", "12345678__");
+    // wifiManager.autoConnect("NodeMCU V3", "12345678__");
     //or use this for auto generated name ESP + ChipID
     //wifiManager.autoConnect();
 
     //if you get here you have connected to the WiFi
-    Serial.println("connected to WIFI network.");
+    // Serial.println("connected to WIFI network.");
 
-    kitchenClient.init();
+    Serial.println(__LINE__);
+    myApp.addClient("192.168.1.80");
+    Serial.println(__LINE__);
+    myApp.init();
+    Serial.println(__LINE__);
+    // kitchenClient.init();
     // timer.every(100, [](void*) -> bool
     // {
     //     kitchenClient.loop();
     //     return true;
     // });
 
-    timer.every(1000,[](void*) -> bool
-    {
-        Serial.println("lambda expression:");
-        t++;
-        h++;
-        Serial.println("Temp : " + String(t));
-        Serial.println("Humi : " + String(h));
-        String toSend = String(t) + "," + String(h);
-        kitchenClient.publish("data", toSend.c_str());
+    // timer.every(1000,[](void*) -> bool
+    // {
+    //     Serial.println("lambda expression:");
+    //     t++;
+    //     h++;
+    //     Serial.println("Temp : " + String(t));
+    //     Serial.println("Humi : " + String(h));
+    //     String toSend = String(t) + "," + String(h);
+    //     kitchenClient.publish("data", toSend.c_str());
 
-        return true;
-    });
+    //     return true;
+    // });
 
-    timer.every(1000, [](void*) -> bool
-    {
-        Light1.toggel();
-        return true;
-    });
+    // timer.every(1000, [](void*) -> bool
+    // {
+    //     Light1.toggel();
+    //     return true;
+    // });
     // Serial.println("end of setup.");
 }
 
 void loop()
 {
-    // Serial.println("start of loop");
-    timer.tick();
-    // Light1.toggel();
-    // delay(2000);
-    kitchenClient.loop();
-    // Serial.println("after .loop");
+    myApp.run();
+    // // Serial.println("start of loop");
+    // timer.tick();
+    // // Light1.toggel();
+    // // delay(2000);
+    // kitchenClient.loop();
+    // // Serial.println("after .loop");
 
-    // unsigned long currentMillis = millis();
-    // if (currentMillis - previousMillis >= interval)
-    // {
-    //     // save the last time you updated the DHT values
-    //     previousMillis = currentMillis;
-    //     if (1)
-    //     {
-    //         delay(2000);
-    //         Serial.println("main loop:");
-    //         t++;
-    //         h++;
-    //         Serial.println("Temperature : " + String(t));
-    //         Serial.println("Humidity : " + String(h));
-    //         String toSend = String(t) + "," + String(h);
-    //         kitchenClient.publish("data", toSend.c_str());
-    //     }
-    // }
+    // // unsigned long currentMillis = millis();
+    // // if (currentMillis - previousMillis >= interval)
+    // // {
+    // //     // save the last time you updated the DHT values
+    // //     previousMillis = currentMillis;
+    // //     if (1)
+    // //     {
+    // //         delay(2000);
+    // //         Serial.println("main loop:");
+    // //         t++;
+    // //         h++;
+    // //         Serial.println("Temperature : " + String(t));
+    // //         Serial.println("Humidity : " + String(h));
+    // //         String toSend = String(t) + "," + String(h);
+    // //         kitchenClient.publish("data", toSend.c_str());
+    // //     }
+    // // }
 }
