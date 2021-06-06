@@ -1,5 +1,5 @@
 //---------------------------------------------------------------------------
-//! \file IMqttClient.hpp
+//! \file mqttClient.hpp
 //! \authors Anas Khedr
 //! \brief 
 //! \version 0.1
@@ -55,6 +55,8 @@ namespace mqtt
 
             void loop();
             void init();
+            void publishState(const std::string& topic, const std::string& payload);
+            void publishState(const std::string& topic, const helper::actions& action);
 
             PubSubClient& getClient();
 

@@ -17,10 +17,12 @@
 #include <WiFiManager.h> //https://github.com/tzapu/WiFiManager
 #include <arduino-timer.h>
 #include <map>
+#include <functional>
 #include "relayDevice.hpp"
 #include "mqttClient.hpp"
 #include "helper.hpp"
 #include "ImqttObserver.hpp"
+#include <DHTesp.h>
 
 
 
@@ -85,18 +87,30 @@ class Application : public IObserver
         //!
         void splitRoomAndSensor(const std::string fullTopic, std::string& room, std::string& sensor);
 
+        void updateTemperatureAndHumidityValues();
+
         // Data members
         // std::vector<std::pair<std::string, std::string>> m_brokerInitData;
         std::vector<std::string> m_brokerIps;
 
         // std::vector<mqtt::mqttClient> m_mqttClients;
-        std::vector<std::unique_ptr<mqtt::mqttClient>> m_mqttClients;
+        std::vector<std::shared_ptr<mqtt::mqttClient>> m_mqttClients;
 
         WiFiClient m_espClient;
 
         WiFiManager m_wifiManager;
 
+        // source: https://chewett.co.uk/blog/1405/using-the-dht11-temperature-sensor-with-a-wemos-d1-mini-esp8266/
+        DHTesp m_dhtSensor;
+
+        float m_humidity;
+        float m_temperature;
+
+        unsigned long m_lastSentTime;
+
         Timer<10> m_timerTasks;
+
+        std::function<bool(void*)> gpioCheckerTask;
 
         // map must use with ptr https://stackoverflow.com/a/2281473/6184259
         std::map<std::string, std::shared_ptr<bathRoom::bathRoomGPIO>> m_ControlGPIOsList;

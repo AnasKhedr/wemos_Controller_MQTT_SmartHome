@@ -18,6 +18,7 @@
 #include <Arduino.h>            //the compiler will faile to regonize pinMode and OUTPUT without Arduino.h
 #include "ISimpleDevice.hpp"
 #include "helper.hpp"
+#include "mqttClient.hpp"
 
 
 //---------------------------------------------------------------------------
@@ -51,6 +52,7 @@ namespace bathRoom
         bathRoomGPIO(const uint8_t GPIOPin,
                     const GPIOtype type,
                     const std::string topic = "NULL",
+                    const uint8_t toggelButton = 0,
                     const uint8_t internalResistor = INPUT_PULLUP);
 
         //---------------------------------------------------------------------------
@@ -76,12 +78,20 @@ namespace bathRoom
 
         void act(const helper::actions& action);
 
+        void checkButton(std::vector<std::shared_ptr<mqtt::mqttClient>>& mqttClients);
+
 
     private:
         //---------------------------------------------------------------------------
         //! \brief
         //!
         const uint8_t m_GPIOPin;
+
+        //---------------------------------------------------------------------------
+        //! \brief 
+        //! 
+        //!
+        const uint8_t m_toggelButton;
 
         //---------------------------------------------------------------------------
         //! \brief

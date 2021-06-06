@@ -10,6 +10,7 @@
 // Includes
 //---------------------------------------------------------------------------
 #include "relayDevice.hpp"
+#include "Application.hpp"
 
 
 // static const uint8_t D0   = 16;
@@ -43,14 +44,15 @@ static std::vector<uint8_t> validPins{D0,D1,D2,D3,D4,D5,D6,D7,D8,D9,D10};
 namespace bathRoom
 {
 
-    bathRoomGPIO::bathRoomGPIO(const uint8_t GPIOPin, const GPIOtype type, const std::string handle, const uint8_t internalResistor) :
+    bathRoomGPIO::bathRoomGPIO(const uint8_t GPIOPin, const GPIOtype type, const std::string handle, const uint8_t toggelButton, const uint8_t internalResistor) :
         m_GPIOPin(GPIOPin),
+        m_toggelButton(toggelButton),
         m_type(type)
         // m_handle(handle)     // m_handle is not a member, must be initialized in its own class
     {
         // initializing handler
         m_handle = handle;
-        m_state = true;        // specific for my need, GPIO device is active low
+        m_currentState = true;        // specific for my need, GPIO device is active low
 
         // verify if we can use this pin or not
         if(canUsePin(GPIOPin))
@@ -74,6 +76,18 @@ namespace bathRoom
         {
             Serial.println("GPIOtype::control -------------------");
             pinMode(m_GPIOPin, OUTPUT);
+            pinMode(m_toggelButton, internalResistor);
+
+            // Application::m_timerTasks;
+            // m_buttonCheck.every(100, [&](void*) -> bool
+            // Application::m_timerTasks.every(100, [&](void*) -> bool
+            // {
+            //     if(digitalRead(m_toggelButton) == LOW)
+            //     {
+            //         toggel();
+            //     }
+            //     return true;
+            // });
         }
         // else if the device type is read then we need to get data from it via GPIO input pin
         else
@@ -116,24 +130,25 @@ namespace bathRoom
 
     void bathRoomGPIO::switchOn()
     {
-        m_state = true;
-        Serial.printf("setting GPIO: %d[%s] state to: %d\n", m_GPIOPin, m_handle.c_str(), m_state);
-        digitalWrite(m_GPIOPin, m_state);
+        // my devices are active low
+        m_currentState = false;
+        Serial.printf("setting GPIO: %d[%s] state to: %d\n", m_GPIOPin, m_handle.c_str(), m_currentState);
+        digitalWrite(m_GPIOPin, m_currentState);
     }
 
     void bathRoomGPIO::switchOff()
     {
-        m_state = false;
-        Serial.printf("setting GPIO: %d[%s] state to: %d\n", m_GPIOPin, m_handle.c_str(), m_state);
-        digitalWrite(m_GPIOPin, m_state);
+        m_currentState = true;
+        Serial.printf("setting GPIO: %d[%s] state to: %d\n", m_GPIOPin, m_handle.c_str(), m_currentState);
+        digitalWrite(m_GPIOPin, m_currentState);
     }
 
     void bathRoomGPIO::toggel()
     {
         Serial.printf("Toggeling pin %d[%s] from state %d to %d\n",
-                        m_GPIOPin, m_handle.c_str(), m_state, !m_state);
-        m_state = !(m_state);
-        digitalWrite(m_GPIOPin, m_state);
+                        m_GPIOPin, m_handle.c_str(), m_currentState, !m_currentState);
+        m_currentState = !(m_currentState);
+        digitalWrite(m_GPIOPin, m_currentState);
     }
 
     void bathRoomGPIO::act(const helper::actions& action)
@@ -153,6 +168,30 @@ namespace bathRoom
         default:
             Serial.println("UNKOWN ACTION, DISCARDING!");
             break;
+        }
+    }
+
+    void bathRoomGPIO::checkButton(std::vector<std::shared_ptr<mqtt::mqttClient>>& mqttClients)
+    {
+        // rising edge
+        bool state = digitalRead(m_toggelButton);
+        if((state == LOW) && (m_lastState == HIGH))
+        {
+            m_lastState = LOW;
+            Serial.printf("Button Pressed for %s, toggeling state.", m_handle.c_str());
+            // toggel();
+
+            for(auto& oneClient : mqttClients)
+            {
+                Serial.println("start initializing over m_mqttClients");
+                oneClient->publishState(app::bathRoomGeneralTopic+m_handle, helper::actions::TOGGEL);
+                Serial.println("done initializing over m_mqttClients");
+            }
+        }
+        else if((state == HIGH) && (m_lastState == LOW))
+        {
+            Serial.println("Else");
+            m_lastState = HIGH;
         }
     }
 

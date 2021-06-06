@@ -46,7 +46,11 @@ class ISimpleDevice
 
     protected:
         // deviceStates m_state;
-        bool m_state;
+        bool m_currentState;
+
+        bool m_lastState;
+
+
 
         //---------------------------------------------------------------------------
         //! \brief handle string representing the device name in the mqtt message

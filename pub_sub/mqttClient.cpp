@@ -1,5 +1,5 @@
 //---------------------------------------------------------------------------
-//! \file mattClient.cpp
+//! \file mqttClient.cpp
 //! \authors Anas Khedr
 //! \brief 
 //! \version 0.1
@@ -79,6 +79,18 @@ namespace mqtt
     PubSubClient& mqttClient::getClient()
     {
         return m_pubSubClient;
+    }
+
+    void mqttClient::publishState(const std::string& topic, const std::string& payload)
+    {
+        Serial.printf("Publishing state, topic: %s, payload: %s.\n",topic.c_str() , payload.c_str());
+        m_pubSubClient.publish(topic.c_str(), payload.c_str());
+    }
+
+    void mqttClient::publishState(const std::string& topic, const helper::actions& action)
+    {
+        Serial.printf("Publishing state, topic: %s, payload: %d\n",topic.c_str() , static_cast<int>(action));
+        m_pubSubClient.publish(topic.c_str(), std::to_string(static_cast<int>(action)).c_str());
     }
 
     void mqttCallback(char *topic, byte *payload, unsigned int length)
