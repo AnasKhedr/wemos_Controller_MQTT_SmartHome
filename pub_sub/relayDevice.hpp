@@ -32,12 +32,11 @@ namespace bathRoom
     //!
     enum class GPIOtype : bool
     {
-        control,    //! <
-        read        //!<
+        activeLow,          //! <   if the device requires digital low(0V) signal to activate
+        activeHigh          //! <   if the device requires digital high signal to activate
     };
 
     class bathRoomGPIO  : public ISimpleDevice
-                        // , public Iactor
     {
 
     public:
@@ -48,6 +47,7 @@ namespace bathRoom
         //! \param GPIOPin
         //! \param type
         //! \param internalResistor
+        //! \todo deprecate \p type
         //!
         bathRoomGPIO(const uint8_t GPIOPin,
                     const GPIOtype type,
@@ -76,8 +76,18 @@ namespace bathRoom
         //!
         virtual void toggel() override;
 
+        //---------------------------------------------------------------------------
+        //! \brief 
+        //! 
+        //! \param action
+        //!
         void act(const helper::actions& action);
 
+        //---------------------------------------------------------------------------
+        //! \brief 
+        //! 
+        //! \param mqttClients
+        //!
         void checkButton(std::vector<std::shared_ptr<mqtt::mqttClient>>& mqttClients);
 
 

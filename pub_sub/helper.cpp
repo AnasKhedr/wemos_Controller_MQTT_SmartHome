@@ -19,22 +19,6 @@
 namespace helper
 {
 
-    // std::pair<std::string, double> mqttCallback(char *topic, byte *payload, unsigned int length)
-
-
-    //source: https://stackoverflow.com/a/47978023/6184259
-    std::string random_string()
-    {
-        std::string str("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
-
-        std::random_device rd;
-        std::mt19937 generator(rd());
-
-        std::shuffle(str.begin(), str.end(), generator);
-
-        return str.substr(0, 8);    // assumes 32 < number of characters in str
-    }
-
     std::string toString(int mqttFailedState)
     {
         switch (mqttFailedState)

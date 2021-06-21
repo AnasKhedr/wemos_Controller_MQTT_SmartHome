@@ -19,6 +19,7 @@
 #include <ESP8266WiFi.h> //https://github.com/esp8266/Arduino
 #include "helper.hpp"
 #include "ImqttObserver.hpp"
+#include "common.hpp"
 
 
 

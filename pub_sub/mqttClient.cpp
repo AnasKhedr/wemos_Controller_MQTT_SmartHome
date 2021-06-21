@@ -20,7 +20,7 @@
 namespace mqtt
 {
     mqttClient::mqttClient(std::string ip, std::string topic, callbackType callback) :
-        m_pubSubClient(ip.c_str(), 1884, callback, m_wifiClient), m_brokerIp(ip)
+        m_pubSubClient(ip.c_str(), MQTTPORT, callback, m_wifiClient), m_brokerIp(ip)
     {
         // connect(ip,topic);
     }
@@ -54,7 +54,7 @@ namespace mqtt
             {
                 Serial.print("[mqttClient] failed with state: ");
                 Serial.print(helper::toString(m_pubSubClient.state()).c_str());
-                Serial.print(", retrying in 2 seconds.");
+                Serial.print(", retrying in 2 seconds.\n");
                 delay(2000);
             }
         }

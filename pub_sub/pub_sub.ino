@@ -15,14 +15,14 @@
 #define LED D2
 // Uncomment the type of sensor in use:
 
-unsigned long previousMillis = 0;
-unsigned long interval = 10000;
+// unsigned long previousMillis = 0;
+// unsigned long interval = 10000;
 
-const char *kitchenServer = "192.168.1.80";
-const char *bedRoomServer = "192.168.1.21";
-const int mqttPort = 1883;
-int t;
-int h;
+// const char *kitchenServer = "192.168.1.80";
+// const char *bedRoomServer = "192.168.1.21";
+// const int mqttPort = 1883;
+// int t;
+// int h;
 
 app::Application myApp;
 
@@ -35,9 +35,9 @@ app::Application myApp;
 // Timer<2> timer; // = timer_create_default(); // create a timer with default settings
 
                             //5 means GPIO5 -> D1
-// bathRoom::bathRoomGPIO Light1(5,bathRoom::GPIOtype::control, "Light5");
-// bathRoom::bathRoomGPIO Light2(D6,bathRoom::GPIOtype::control, "Light6");
-// bathRoom::bathRoomGPIO Light3(D7,bathRoom::GPIOtype::control, "Light7");
+// bathRoom::bathRoomGPIO Light1(5,bathRoom::GPIOtype::activeLow, "Light5");
+// bathRoom::bathRoomGPIO Light2(D6,bathRoom::GPIOtype::activeLow, "Light6");
+// bathRoom::bathRoomGPIO Light3(D7,bathRoom::GPIOtype::activeLow, "Light7");
 
 void setup()
 {
@@ -69,7 +69,7 @@ void setup()
     // Serial.println("connected to WIFI network.");
 
     Serial.println(__LINE__);
-    myApp.addClient("192.168.1.80");
+    myApp.addClient(TESTBROKER);
     Serial.println(__LINE__);
     myApp.init();
     Serial.println(__LINE__);

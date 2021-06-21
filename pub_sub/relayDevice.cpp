@@ -71,30 +71,21 @@ namespace bathRoom
         Serial.printf("gpio pin: %d, m_type: %d, handle: %s\n",GPIOPin,bool(type),handle.c_str());
 
 
-        // if the device type is control then we need to control it via GPIO output pin
-        if(m_type == GPIOtype::control)
-        {
-            Serial.println("GPIOtype::control -------------------");
-            pinMode(m_GPIOPin, OUTPUT);
-            pinMode(m_toggelButton, internalResistor);
+        Serial.println("GPIOtype::activeLow -------------------");
+        pinMode(m_GPIOPin, OUTPUT);
+        pinMode(m_toggelButton, internalResistor);
 
-            // Application::m_timerTasks;
-            // m_buttonCheck.every(100, [&](void*) -> bool
-            // Application::m_timerTasks.every(100, [&](void*) -> bool
-            // {
-            //     if(digitalRead(m_toggelButton) == LOW)
-            //     {
-            //         toggel();
-            //     }
-            //     return true;
-            // });
-        }
-        // else if the device type is read then we need to get data from it via GPIO input pin
-        else
-        {
-            Serial.println("else +++++++++++++++++++");
-            pinMode(m_GPIOPin, internalResistor);
-        }
+        // Application::m_timerTasks;
+        // m_buttonCheck.every(100, [&](void*) -> bool
+        // Application::m_timerTasks.every(100, [&](void*) -> bool
+        // {
+        //     if(digitalRead(m_toggelButton) == LOW)
+        //     {
+        //         toggel();
+        //     }
+        //     return true;
+        // });
+
         Serial.println("end of bathRoomGPIO constructor ===================");
     }
 
@@ -131,15 +122,29 @@ namespace bathRoom
     void bathRoomGPIO::switchOn()
     {
         // my devices are active low
-        m_currentState = false;
-        Serial.printf("setting GPIO: %d[%s] state to: %d\n", m_GPIOPin, m_handle.c_str(), m_currentState);
+        if(m_type == GPIOtype::activeLow)
+        {
+            m_currentState = false;
+        }
+        else
+        {
+            m_currentState = true;
+        }
+        Serial.printf("[switchOn]setting GPIO: %d[%s] state to: %d\n", m_GPIOPin, m_handle.c_str(), m_currentState);
         digitalWrite(m_GPIOPin, m_currentState);
     }
 
     void bathRoomGPIO::switchOff()
     {
-        m_currentState = true;
-        Serial.printf("setting GPIO: %d[%s] state to: %d\n", m_GPIOPin, m_handle.c_str(), m_currentState);
+        if(m_type == GPIOtype::activeLow)
+        {
+            m_currentState = true;
+        }
+        else
+        {
+            m_currentState = false;
+        }
+        Serial.printf("[switchOff]setting GPIO: %d[%s] state to: %d\n", m_GPIOPin, m_handle.c_str(), m_currentState);
         digitalWrite(m_GPIOPin, m_currentState);
     }
 
@@ -184,7 +189,7 @@ namespace bathRoom
             for(auto& oneClient : mqttClients)
             {
                 Serial.println("start initializing over m_mqttClients");
-                oneClient->publishState(app::bathRoomGeneralTopic+m_handle, helper::actions::TOGGEL);
+                oneClient->publishState(bathRoomGeneralTopic+m_handle, helper::actions::TOGGEL);
                 Serial.println("done initializing over m_mqttClients");
             }
         }

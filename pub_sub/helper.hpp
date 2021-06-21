@@ -19,7 +19,9 @@
 #include <string>
 #include <PubSubClient.h>
 #include <limits>   // for numeric_limits
-// #include <pair
+#include "common.hpp"
+
+
 
 namespace helper
 {
@@ -37,8 +39,6 @@ namespace helper
     // std::function<void (char* , byte* , unsigned int)> mqttCallback;
 
     // std::pair<std::string, double> mqttCallback(char *topic, byte *payload, unsigned int length)
-
-    std::string random_string();
 
     std::string toString(int mqttFailedState);
 

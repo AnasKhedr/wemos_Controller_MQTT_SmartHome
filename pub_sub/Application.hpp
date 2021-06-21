@@ -23,6 +23,8 @@
 #include "helper.hpp"
 #include "ImqttObserver.hpp"
 #include <DHTesp.h>
+#include "gasSensor.hpp"
+#include "common.hpp"
 
 
 
@@ -33,15 +35,6 @@
 namespace app
 {
 
-//---------------------------------------------------------------------------
-//! \brief 
-//! \note   - auto will translate to char*
-//!
-constexpr auto bathRoomGeneralTopic("/home/Room/bathroom/");
-constexpr auto bedRoomGeneralTopic("/home/Room/bedroom/");
-constexpr auto livingRoomGeneralTopic("/home/Room/livingroom/");
-constexpr auto receptionGeneralTopic("/home/Room/reception/");
-constexpr auto kitchenGeneralTopic("/home/Room/kitchen/");
 class Application : public IObserver
 {
     public:
@@ -87,6 +80,10 @@ class Application : public IObserver
         //!
         void splitRoomAndSensor(const std::string fullTopic, std::string& room, std::string& sensor);
 
+        //---------------------------------------------------------------------------
+        //! \brief 
+        //! 
+        //!
         void updateTemperatureAndHumidityValues();
 
         // Data members
@@ -111,6 +108,8 @@ class Application : public IObserver
         Timer<10> m_timerTasks;
 
         std::function<bool(void*)> gpioCheckerTask;
+
+        gasSensor m_MQ4Sensor;
 
         // map must use with ptr https://stackoverflow.com/a/2281473/6184259
         std::map<std::string, std::shared_ptr<bathRoom::bathRoomGPIO>> m_ControlGPIOsList;
