@@ -27,7 +27,7 @@ class ISimpleSensor
 
         virtual bool readDigitalValue() = 0;
 
-        virtual int readAnalogValue() = 0;
+        virtual float readAnalogValue() = 0;
 
         // Data members
 

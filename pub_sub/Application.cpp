@@ -25,20 +25,22 @@ namespace app
 {
 
 Application::Application() :
+    m_ads(0x48),
     m_lastSentTime(INTERVAL),
-    m_MQ4Sensor(MQ4DIGITALPIN, INPUT)
+    m_MQ4Sensor(MQ4DIGITALPIN, m_ads, ADSA0, INPUT)
 {
     //starting up the serial
     Serial.begin(115200);
     Serial.println("start of Application");
 
+    m_ads.setGain(GAIN_TWOTHIRDS);  // 2/3x gain +/- 6.144V  1 bit = 3mV      0.1875mV (default)
     // m_wifiManager.resetSettings();
     // m_wifiManager.setAPStaticIPConfig(IPAddress(192,168,1,110), IPAddress(192,168,1,1), IPAddress(255,255,255,0));
 
     //factory
-    m_ControlGPIOsList["mainLight"] = std::make_shared<bathRoom::bathRoomGPIO>(MAINLIGHTPIN, bathRoom::GPIOtype::activeLow,"mainLight",MAINLIGHTBUTTONPIN);
-    m_ControlGPIOsList["washbasineLight"] = std::make_shared<bathRoom::bathRoomGPIO>(WASHBASINELIGHTPIN, bathRoom::GPIOtype::activeLow,"washbasineLight",WASHBASINELIGHTBUTTONPIN);
-    m_ControlGPIOsList["ventilator"] = std::make_shared<bathRoom::bathRoomGPIO>(VENTILATORPIN, bathRoom::GPIOtype::activeLow,"ventilator",VENTILATORBUTTONPIN);
+    m_ControlGPIOsList["mainLight"] = std::make_shared<bathRoom::bathRoomGPIO>(MAINLIGHTBUTTONPIN, bathRoom::GPIOtype::activeLow,"mainLight",MAINLIGHTPIN);
+    m_ControlGPIOsList["washbasineLight"] = std::make_shared<bathRoom::bathRoomGPIO>(WASHBASINELIGHTBUTTONPIN, bathRoom::GPIOtype::activeLow,"washbasineLight",WASHBASINELIGHTPIN);
+    m_ControlGPIOsList["ventilator"] = std::make_shared<bathRoom::bathRoomGPIO>(VENTILATORBUTTONPIN, bathRoom::GPIOtype::activeLow,"ventilator",VENTILATORPIN);
 }
 
 void Application::addClient(std::string brokerIp)
@@ -55,9 +57,10 @@ void Application::init()
     m_wifiManager.autoConnect();
     Serial.println("connected to WIFI network.");
 
-    Serial.println("initializing DHT11 Sensord");
+    Serial.println("initializing DHT11 and ADS1115 Sensors");
     m_dhtSensor.setup(DHT11PIN, DHTesp::DHT11);
-    Serial.println("done initializing dht11");
+    m_ads.begin();
+    Serial.println("done initializing dht11 and ADS1115.");
 
     // creating clients to all the different brokerIps
     for(auto& oneIp : m_brokerIps)
@@ -154,6 +157,7 @@ void Application::run()
         it->second->checkButton(m_mqttClients);
     }
 
+    updateHazeredSensors();
     updateTemperatureAndHumidityValues();
 }
 
@@ -173,44 +177,71 @@ void Application::updateTemperatureAndHumidityValues()
     // send temp and humi every 10 seconds
     if((millis() - m_lastSentTime) > INTERVAL)
     {
+        // updateing the time.
+        m_lastSentTime = millis();
+
         uint8_t counter = 0;
+        float sensorValue = m_MQ4Sensor.readAnalogValue();
+        bool sensorValueDigital = !m_MQ4Sensor.readDigitalValue();
+
         do
         {
             counter++;
             m_temperature = m_dhtSensor.getTemperature();
-            Serial.printf("Reading humidity\n");
+            // Serial.printf("Reading humidity\n");
             delay(1);
-        }while((m_temperature == NAN) || (counter < 250));
+        }
+        while((m_temperature == NAN) || (counter < 250));
 
         m_humidity = m_dhtSensor.getHumidity();
         Serial.printf("5 seconds have passed, updateing Temperature: %f C and Humidity: %f%%\n",
                             m_temperature, m_humidity);
-        // updateing the time.
-        m_lastSentTime = millis();
 
-        if(m_temperature != NAN)
-        {
-            for(auto&& oneClient : m_mqttClients)
-            {
-                oneClient->publish(std::string(bathRoomGeneralTopic)+"temp", std::to_string(m_temperature));
-                oneClient->publish(std::string(bathRoomGeneralTopic)+"humi", std::to_string(m_humidity));
-                // Serial.println("publishing.");
-                // oneClient->publish("Test",std::to_string(x).c_str());
-            }
-        }
-        else
+        if(m_temperature == NAN)
         {
             Serial.println("Failed to get DHT11 reading, skipping updateing.");
         }
+        else
+        {
+        }
 
-        int sensorValue = m_MQ4Sensor.readAnalogValue();
-        bool sensorValueDigital = !m_MQ4Sensor.readDigitalValue();
+        for(auto&& oneClient : m_mqttClients)
+        {
+            oneClient->publish(std::string(bathRoomGeneralTopic)+"mq4Analog", std::to_string(sensorValue));
+            oneClient->publish(std::string(bathRoomGeneralTopic)+"mq4Digital", std::to_string(sensorValueDigital));
+            if(m_temperature != NAN)
+            {
+                oneClient->publish(std::string(bathRoomGeneralTopic)+"temp", std::to_string(m_temperature));
+                oneClient->publish(std::string(bathRoomGeneralTopic)+"humi", std::to_string(m_humidity));
+            }
+            // Serial.println("publishing.");
+            // oneClient->publish("Test",std::to_string(x).c_str());
+        }
         // Convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 3.2V):
-        float voltage = sensorValue * (3.2 / 1023.0);
+        // float voltage = sensorValue * (3.2 / 1023.0);
         // print out the value you read:
-        Serial.printf("voltage of M4 sensor is: %f, digital: %d\n",voltage, sensorValueDigital);
+        // Serial.printf("voltage of M4 sensor is: %f, digital: %d\n",sensorValue, sensorValueDigital);
     }
 
+
+}
+
+void Application::updateHazeredSensors()
+{
+    static bool mq4SensorValueDigital;
+    if(mq4SensorValueDigital != m_MQ4Sensor.readDigitalValue())
+    {
+        mq4SensorValueDigital = m_MQ4Sensor.readDigitalValue();
+
+        for(auto&& oneClient : m_mqttClients)
+        {
+            oneClient->publish(std::string(bathRoomGeneralTopic)+"mq4Analog", std::to_string(m_MQ4Sensor.readAnalogValue()));
+            oneClient->publish(std::string(bathRoomGeneralTopic)+"mq4Digital", std::to_string(mq4SensorValueDigital));
+
+            // Serial.println("publishing.");
+            // oneClient->publish("Test",std::to_string(x).c_str());
+        }
+    }
 }
 
 }       //namespace app

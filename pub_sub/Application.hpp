@@ -15,6 +15,7 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h> //https://github.com/esp8266/Arduino
 #include <WiFiManager.h> //https://github.com/tzapu/WiFiManager
+#include <Adafruit_ADS1015.h>   // for m_ads version 1.1.1
 #include <arduino-timer.h>
 #include <map>
 #include <functional>
@@ -81,10 +82,16 @@ class Application : public IObserver
         void splitRoomAndSensor(const std::string fullTopic, std::string& room, std::string& sensor);
 
         //---------------------------------------------------------------------------
-        //! \brief 
-        //! 
+        //! \brief read DHT11 sensor readings and send it to all brokers on defined
+        //! time interval (INTERVAL in common.hpp)
         //!
         void updateTemperatureAndHumidityValues();
+
+        //---------------------------------------------------------------------------
+        //! \brief check the gas sensors values and update their values if needed
+        //! 
+        //!
+        void updateHazeredSensors();
 
         // Data members
         // std::vector<std::pair<std::string, std::string>> m_brokerInitData;
@@ -108,6 +115,12 @@ class Application : public IObserver
         Timer<10> m_timerTasks;
 
         std::function<bool(void*)> gpioCheckerTask;
+
+        //---------------------------------------------------------------------------
+        //! \brief object providing the reading for all Analog to digital channels
+        //! to be used by other objects (sensor)
+        //!
+        Adafruit_ADS1115 m_ads;
 
         gasSensor m_MQ4Sensor;
 

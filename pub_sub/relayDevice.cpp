@@ -44,7 +44,7 @@ static std::vector<uint8_t> validPins{D0,D1,D2,D3,D4,D5,D6,D7,D8,D9,D10};
 namespace bathRoom
 {
 
-    bathRoomGPIO::bathRoomGPIO(const uint8_t GPIOPin, const GPIOtype type, const std::string handle, const uint8_t toggelButton, const uint8_t internalResistor) :
+    bathRoomGPIO::bathRoomGPIO(const uint8_t GPIOPin, const GPIOtype type, const std::string handle, const std::optional<uint8_t> toggelButton, const uint8_t internalResistor) :
         m_GPIOPin(GPIOPin),
         m_toggelButton(toggelButton),
         m_type(type)
@@ -73,7 +73,10 @@ namespace bathRoom
 
         Serial.println("GPIOtype::activeLow -------------------");
         pinMode(m_GPIOPin, OUTPUT);
-        pinMode(m_toggelButton, internalResistor);
+        if(m_toggelButton)
+        {
+            pinMode(m_toggelButton.value(), internalResistor);
+        }
 
         // Application::m_timerTasks;
         // m_buttonCheck.every(100, [&](void*) -> bool
@@ -178,8 +181,14 @@ namespace bathRoom
 
     void bathRoomGPIO::checkButton(std::vector<std::shared_ptr<mqtt::mqttClient>>& mqttClients)
     {
+        // if this GPIO device is was not set for a toggle pin.
+        if(!m_toggelButton)
+        {
+            Serial.printf("This Device has not toggle pin!!\n");
+            return;
+        }
         // rising edge
-        bool state = digitalRead(m_toggelButton);
+        bool state = digitalRead(m_toggelButton.value());
         if((state == LOW) && (m_lastState == HIGH))
         {
             m_lastState = LOW;

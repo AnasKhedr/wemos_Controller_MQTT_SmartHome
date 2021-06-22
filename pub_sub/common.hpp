@@ -18,20 +18,31 @@
 #define MQTTPORT 1884
 
 // relay pins
-#define MAINLIGHTBUTTONPIN D5
-#define WASHBASINELIGHTBUTTONPIN D6
-#define VENTILATORBUTTONPIN D7
+#define MAINLIGHTBUTTONPIN D6
+#define WASHBASINELIGHTBUTTONPIN D7
+#define VENTILATORBUTTONPIN D8
 
 // buttons pins
-#define MAINLIGHTPIN D1
-#define WASHBASINELIGHTPIN D3
-#define VENTILATORPIN D3
+#define MAINLIGHTPIN D3
+#define WASHBASINELIGHTPIN D4
+#define VENTILATORPIN D5
 
-#define DHT11PIN D4
+// sensors pins
+#define DHT11PIN 10      // SD3     --> if used D2, then the program will crash
+// for some reason, the mapping is messed up in ESP but correct in arduino
+#define ADSA0   1
+#define ADSA1   2
+#define ADSA2   3
+#define ADSA3   0
+constexpr float bitToVolt = (0.1875F/1000);
 
 #define TESTBROKER "192.168.1.80"
 
 #define MQ4DIGITALPIN D0
+//---------------------------------------------------------------------------
+//! \brief interval in ms after which the temperature and the Gas sensors
+//! reading will be sent to brokers
+//!
 #define INTERVAL 10000
 
 //---------------------------------------------------------------------------

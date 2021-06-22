@@ -14,12 +14,14 @@
 // Includes
 //---------------------------------------------------------------------------
 #include "ISimpleSensor.hpp"
+#include "common.hpp"
+#include <Adafruit_ADS1015.h>
 
 
 class gasSensor : ISimpleSensor
 {
     public:
-        gasSensor(const uint8_t& gpioPin, const uint8_t& pullUpDown = INPUT_PULLUP, const uint8_t analogPin = A0);
+        gasSensor(const uint8_t& gpioPin, Adafruit_ADS1115& ads, const uint8_t channel, const uint8_t& pullUpDown = INPUT_PULLUP);
 
         //---------------------------------------------------------------------------
         //! \brief Set the Input And Pull Resistor object
@@ -42,13 +44,14 @@ class gasSensor : ISimpleSensor
         //---------------------------------------------------------------------------
         //! \brief 
         //! 
-        //! \return int
+        //! \return int16_t
         //!
-        virtual int readAnalogValue() override;
+        virtual float readAnalogValue() override;
 
     private:
-        uint8_t m_analogPin;
+        Adafruit_ADS1115& m_ads;
         // Data members
+        uint8_t m_ADSChannel;
 };
 
 

@@ -15,6 +15,7 @@
 //---------------------------------------------------------------------------
 #include <stdint.h>
 #include <vector>
+#include <optional>             //I'd rather use boot::optional but Ubuntu is a shitty OS
 #include <Arduino.h>            //the compiler will faile to regonize pinMode and OUTPUT without Arduino.h
 #include "ISimpleDevice.hpp"
 #include "helper.hpp"
@@ -52,7 +53,7 @@ namespace bathRoom
         bathRoomGPIO(const uint8_t GPIOPin,
                     const GPIOtype type,
                     const std::string topic = "NULL",
-                    const uint8_t toggelButton = 0,
+                    const std::optional<uint8_t> toggelButton = std::nullopt,
                     const uint8_t internalResistor = INPUT_PULLUP);
 
         //---------------------------------------------------------------------------
@@ -101,7 +102,7 @@ namespace bathRoom
         //! \brief 
         //! 
         //!
-        const uint8_t m_toggelButton;
+        const std::optional<uint8_t> m_toggelButton;
 
         //---------------------------------------------------------------------------
         //! \brief

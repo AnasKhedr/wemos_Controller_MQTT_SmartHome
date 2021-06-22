@@ -19,9 +19,10 @@
 // Functions
 //---------------------------------------------------------------------------
 
-gasSensor::gasSensor(const uint8_t& gpioPin, const uint8_t& pullUpDown, const uint8_t analogPin) :
+gasSensor::gasSensor(const uint8_t& gpioPin, Adafruit_ADS1115& ads, const uint8_t channel, const uint8_t& pullUpDown) :
     ISimpleSensor(gpioPin, pullUpDown),
-    m_analogPin(analogPin)
+    m_ads(ads),
+    m_ADSChannel(channel)
 {
 
 }
@@ -31,9 +32,9 @@ bool gasSensor::readDigitalValue()
     return digitalRead(m_sensorPin);
 }
 
-int gasSensor::readAnalogValue()
+float gasSensor::readAnalogValue()
 {
-    return analogRead(m_analogPin);
+    return m_ads.readADC_SingleEnded(m_ADSChannel)*bitToVolt;
 }
 
 void gasSensor::setInputAndPullResistor(const uint8_t& gpioPin, const uint8_t& pullUpDown)
