@@ -21,6 +21,7 @@
 #define MAINLIGHTBUTTONPIN D6
 #define WASHBASINELIGHTBUTTONPIN D7
 #define VENTILATORBUTTONPIN D8
+#define BUZZERCONTROLPIN 3     // RX
 
 // buttons pins
 #define MAINLIGHTPIN D3
@@ -30,20 +31,21 @@
 // sensors pins
 #define DHT11PIN 10      // SD3     --> if used D2, then the program will crash
 // for some reason, the mapping is messed up in ESP but correct in arduino
-#define ADSA0   1
-#define ADSA1   2
-#define ADSA2   3
-#define ADSA3   0
+#define ADSA1   1
+#define ADSA2   2       //verified
+#define ADSA3   3
+#define ADSA0   0
 constexpr float bitToVolt = (0.1875F/1000);
 
 #define TESTBROKER "192.168.1.80"
 
 #define MQ4DIGITALPIN D0
+
 //---------------------------------------------------------------------------
 //! \brief interval in ms after which the temperature and the Gas sensors
 //! reading will be sent to brokers
 //!
-#define INTERVAL 10000
+#define INTERVAL 5000
 
 //---------------------------------------------------------------------------
 //! \brief 

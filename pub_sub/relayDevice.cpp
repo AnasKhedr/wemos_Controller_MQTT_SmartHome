@@ -184,9 +184,10 @@ namespace bathRoom
         // if this GPIO device is was not set for a toggle pin.
         if(!m_toggelButton)
         {
-            Serial.printf("This Device has not toggle pin!!\n");
+            // Serial.printf("device %s connected to pin: %d, with type m_type: %d, has not toggle pin!!\n",handle.c_str(),GPIOPin,bool(type));
             return;
         }
+
         // rising edge
         bool state = digitalRead(m_toggelButton.value());
         if((state == LOW) && (m_lastState == HIGH))

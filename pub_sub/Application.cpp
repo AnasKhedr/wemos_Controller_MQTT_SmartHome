@@ -27,7 +27,8 @@ namespace app
 Application::Application() :
     m_ads(0x48),
     m_lastSentTime(INTERVAL),
-    m_MQ4Sensor(MQ4DIGITALPIN, m_ads, ADSA0, INPUT)
+    m_MQ4Sensor(MQ4DIGITALPIN, m_ads, ADSA1, INPUT),
+    m_MQ2Sensor(MQ4DIGITALPIN, m_ads, ADSA2, INPUT)
 {
     //starting up the serial
     Serial.begin(115200);
@@ -41,6 +42,7 @@ Application::Application() :
     m_ControlGPIOsList["mainLight"] = std::make_shared<bathRoom::bathRoomGPIO>(MAINLIGHTBUTTONPIN, bathRoom::GPIOtype::activeLow,"mainLight",MAINLIGHTPIN);
     m_ControlGPIOsList["washbasineLight"] = std::make_shared<bathRoom::bathRoomGPIO>(WASHBASINELIGHTBUTTONPIN, bathRoom::GPIOtype::activeLow,"washbasineLight",WASHBASINELIGHTPIN);
     m_ControlGPIOsList["ventilator"] = std::make_shared<bathRoom::bathRoomGPIO>(VENTILATORBUTTONPIN, bathRoom::GPIOtype::activeLow,"ventilator",VENTILATORPIN);
+    m_ControlGPIOsList["buzzer"] = std::make_shared<bathRoom::bathRoomGPIO>(BUZZERCONTROLPIN, bathRoom::GPIOtype::activeLow,"buzzer");
 }
 
 void Application::addClient(std::string brokerIp)
@@ -157,8 +159,8 @@ void Application::run()
         it->second->checkButton(m_mqttClients);
     }
 
-    updateHazeredSensors();
-    updateTemperatureAndHumidityValues();
+    checkHazeredSensors();
+    updateSensorsReadings();
 }
 
 void Application::splitRoomAndSensor(const std::string fullTopic, std::string& room, std::string& device)
@@ -171,7 +173,7 @@ void Application::splitRoomAndSensor(const std::string fullTopic, std::string& r
     device = fullTopic.substr(found+1);     // from just after the last / found to the end
 }
 
-void Application::updateTemperatureAndHumidityValues()
+void Application::updateSensorsReadings()
 {
     ///TODO: refactor this --> task
     // send temp and humi every 10 seconds
@@ -181,8 +183,6 @@ void Application::updateTemperatureAndHumidityValues()
         m_lastSentTime = millis();
 
         uint8_t counter = 0;
-        float sensorValue = m_MQ4Sensor.readAnalogValue();
-        bool sensorValueDigital = !m_MQ4Sensor.readDigitalValue();
 
         do
         {
@@ -191,11 +191,11 @@ void Application::updateTemperatureAndHumidityValues()
             // Serial.printf("Reading humidity\n");
             delay(1);
         }
-        while((m_temperature == NAN) || (counter < 250));
+        while((m_temperature == NAN) && (counter < 250));
 
         m_humidity = m_dhtSensor.getHumidity();
-        Serial.printf("5 seconds have passed, updateing Temperature: %f C and Humidity: %f%%\n",
-                            m_temperature, m_humidity);
+        Serial.printf("5 seconds have passed or #retries: %d, updateing Temperature: %f C and Humidity: %f%%\n",
+                            counter, m_temperature, m_humidity);
 
         if(m_temperature == NAN)
         {
@@ -207,15 +207,24 @@ void Application::updateTemperatureAndHumidityValues()
 
         for(auto&& oneClient : m_mqttClients)
         {
-            oneClient->publish(std::string(bathRoomGeneralTopic)+"mq4Analog", std::to_string(sensorValue));
-            oneClient->publish(std::string(bathRoomGeneralTopic)+"mq4Digital", std::to_string(sensorValueDigital));
             if(m_temperature != NAN)
             {
+                //DHT11 readings
                 oneClient->publish(std::string(bathRoomGeneralTopic)+"temp", std::to_string(m_temperature));
                 oneClient->publish(std::string(bathRoomGeneralTopic)+"humi", std::to_string(m_humidity));
+
+                //MQ4 readings
+                oneClient->publish(std::string(bathRoomGeneralTopic)+"mq4Analog", std::to_string(m_MQ4Sensor.readAnalogValue()));
+                oneClient->publish(std::string(bathRoomGeneralTopic)+"mq4Digital", std::to_string(m_MQ4Sensor.readDigitalValue()));
+
+                //MQ2 readings
+                oneClient->publish(std::string(bathRoomGeneralTopic)+"mq2Analog", std::to_string(m_MQ2Sensor.readAnalogValue()));
+                // oneClient->publish(std::string(bathRoomGeneralTopic)+"mq2Digital", std::to_string(mq2SensorValueDigital));
             }
-            // Serial.println("publishing.");
-            // oneClient->publish("Test",std::to_string(x).c_str());
+            else
+            {
+                Serial.println("Failed to get DHT11 readings after 250 retries!");
+            }
         }
         // Convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 3.2V):
         // float voltage = sensorValue * (3.2 / 1023.0);
@@ -226,20 +235,33 @@ void Application::updateTemperatureAndHumidityValues()
 
 }
 
-void Application::updateHazeredSensors()
+void Application::checkHazeredSensors()
 {
     static bool mq4SensorValueDigital;
+    // send only when value of Digital Pin changes
     if(mq4SensorValueDigital != m_MQ4Sensor.readDigitalValue())
     {
+        // update new reading
         mq4SensorValueDigital = m_MQ4Sensor.readDigitalValue();
+
+        ///TODO: add a way to check for analog reading and use it to turn on\off
+        ///TODO: turn on\off buzzer every 0.5S to make a warning sound insteat of alway on
+        if(mq4SensorValueDigital)
+        {
+            m_ControlGPIOsList["buzzer"]->switchOn();
+        }
+        else
+        {
+            m_ControlGPIOsList["buzzer"]->switchOff();
+        }
 
         for(auto&& oneClient : m_mqttClients)
         {
             oneClient->publish(std::string(bathRoomGeneralTopic)+"mq4Analog", std::to_string(m_MQ4Sensor.readAnalogValue()));
             oneClient->publish(std::string(bathRoomGeneralTopic)+"mq4Digital", std::to_string(mq4SensorValueDigital));
 
-            // Serial.println("publishing.");
-            // oneClient->publish("Test",std::to_string(x).c_str());
+            oneClient->publish(std::string(bathRoomGeneralTopic)+"mq2Analog", std::to_string(m_MQ2Sensor.readAnalogValue()));
+            // oneClient->publish(std::string(bathRoomGeneralTopic)+"mq2Digital", std::to_string(mq2SensorValueDigital));
         }
     }
 }

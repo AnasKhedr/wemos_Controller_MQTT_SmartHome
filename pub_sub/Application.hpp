@@ -82,16 +82,16 @@ class Application : public IObserver
         void splitRoomAndSensor(const std::string fullTopic, std::string& room, std::string& sensor);
 
         //---------------------------------------------------------------------------
-        //! \brief read DHT11 sensor readings and send it to all brokers on defined
+        //! \brief read DHT11, MQ4 and MQ2 sensor readings and send it to all brokers on defined
         //! time interval (INTERVAL in common.hpp)
         //!
-        void updateTemperatureAndHumidityValues();
+        void updateSensorsReadings();
 
         //---------------------------------------------------------------------------
         //! \brief check the gas sensors values and update their values if needed
         //! 
         //!
-        void updateHazeredSensors();
+        void checkHazeredSensors();
 
         // Data members
         // std::vector<std::pair<std::string, std::string>> m_brokerInitData;
@@ -123,6 +123,8 @@ class Application : public IObserver
         Adafruit_ADS1115 m_ads;
 
         gasSensor m_MQ4Sensor;
+
+        gasSensor m_MQ2Sensor;
 
         // map must use with ptr https://stackoverflow.com/a/2281473/6184259
         std::map<std::string, std::shared_ptr<bathRoom::bathRoomGPIO>> m_ControlGPIOsList;
