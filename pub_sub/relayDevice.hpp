@@ -31,10 +31,11 @@ namespace bathRoom
     //---------------------------------------------------------------------------
     //! \brief
     //!
-    enum class GPIOtype : bool
+    enum class GPIOtype : uint8_t
     {
         activeLow,          //! <   if the device requires digital low(0V) signal to activate
-        activeHigh          //! <   if the device requires digital high signal to activate
+        activeHigh,         //! <   if the device requires digital high signal to activate
+        NONE                //! <   if the device is no applicable for control (sensor)
     };
 
     class bathRoomGPIO  : public ISimpleDevice
@@ -45,12 +46,12 @@ namespace bathRoom
         //---------------------------------------------------------------------------
         //! \brief Construct a new bath Room G P I O object
         //! 
-        //! \param GPIOPin
+        //! \param controlPin
         //! \param type
         //! \param internalResistor
         //! \todo deprecate \p type
         //!
-        bathRoomGPIO(const uint8_t GPIOPin,
+        bathRoomGPIO(const uint8_t controlPin,
                     const GPIOtype type,
                     const std::string topic = "NULL",
                     const std::optional<uint8_t> toggelButton = std::nullopt,
@@ -91,12 +92,20 @@ namespace bathRoom
         //!
         void checkButton(std::vector<std::shared_ptr<mqtt::mqttClient>>& mqttClients);
 
+        //---------------------------------------------------------------------------
+        //! \brief Get the Current State GPIO pin if configured as an output
+        //!
+        //! \return helper::state::on if the device is on
+        //! \return helper::state::off if the device is off
+        //!
+        helper::state whatIsDeviceState() const;
+
 
     private:
         //---------------------------------------------------------------------------
         //! \brief
         //!
-        const uint8_t m_GPIOPin;
+        const uint8_t m_controlPin;
 
         //---------------------------------------------------------------------------
         //! \brief 

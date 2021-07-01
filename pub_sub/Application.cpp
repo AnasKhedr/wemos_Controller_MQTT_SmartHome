@@ -14,6 +14,7 @@
 // Includes
 //---------------------------------------------------------------------------
 #include "Application.hpp"
+#include <optional>
 
 
 
@@ -26,9 +27,10 @@ namespace app
 
 Application::Application() :
     m_ads(0x48),
-    m_lastSentTime(INTERVAL),
-    m_MQ4Sensor(MQ4DIGITALPIN, m_ads, ADSA1, INPUT),
-    m_MQ2Sensor(MQ4DIGITALPIN, m_ads, ADSA2, INPUT)
+    m_lastSentTime(READINGSUPDATEINTERVAL),
+    m_MQ4Sensor(std::nullopt, m_ads, ADSA1, INPUT),
+    m_MQ2Sensor(std::nullopt, m_ads, ADSA2, INPUT),
+    m_RCWLSensor(RCWLPIN)
 {
     //starting up the serial
     Serial.begin(115200);
@@ -39,10 +41,14 @@ Application::Application() :
     // m_wifiManager.setAPStaticIPConfig(IPAddress(192,168,1,110), IPAddress(192,168,1,1), IPAddress(255,255,255,0));
 
     //factory
-    m_ControlGPIOsList["mainLight"] = std::make_shared<bathRoom::bathRoomGPIO>(MAINLIGHTBUTTONPIN, bathRoom::GPIOtype::activeLow,"mainLight",MAINLIGHTPIN);
-    m_ControlGPIOsList["washbasineLight"] = std::make_shared<bathRoom::bathRoomGPIO>(WASHBASINELIGHTBUTTONPIN, bathRoom::GPIOtype::activeLow,"washbasineLight",WASHBASINELIGHTPIN);
-    m_ControlGPIOsList["ventilator"] = std::make_shared<bathRoom::bathRoomGPIO>(VENTILATORBUTTONPIN, bathRoom::GPIOtype::activeLow,"ventilator",VENTILATORPIN);
-    m_ControlGPIOsList["buzzer"] = std::make_shared<bathRoom::bathRoomGPIO>(BUZZERCONTROLPIN, bathRoom::GPIOtype::activeLow,"buzzer");
+    ///TODO: something is fishy about the creation of those objects, check is
+    m_ControlGPIOsList["mainLight"] = std::make_shared<bathRoom::bathRoomGPIO>(MAINLIGHTPIN, bathRoom::GPIOtype::activeLow,"mainLight",VENTILATORBUTTONPIN);
+    m_ControlGPIOsList["washbasineLight"] = std::make_shared<bathRoom::bathRoomGPIO>(WASHBASINELIGHTPIN, bathRoom::GPIOtype::activeLow,"washbasineLight",WASHBASINELIGHTBUTTONPIN);
+    m_ControlGPIOsList["ventilator"] = std::make_shared<bathRoom::bathRoomGPIO>(VENTILATORPIN, bathRoom::GPIOtype::activeLow,"ventilator",VENTILATORBUTTONPIN);
+    m_ControlGPIOsList["buzzer"] = std::make_shared<bathRoom::bathRoomGPIO>(BUZZERCONTROLPIN, bathRoom::GPIOtype::activeHigh,"buzzer");
+
+    m_RCWLSensor.setRelayControllerObject(m_ControlGPIOsList["mainLight"]);
+
 }
 
 void Application::addClient(std::string brokerIp)
@@ -161,6 +167,8 @@ void Application::run()
 
     checkHazeredSensors();
     updateSensorsReadings();
+    checkMothion();
+    m_RCWLSensor.controlLight();
 }
 
 void Application::splitRoomAndSensor(const std::string fullTopic, std::string& room, std::string& device)
@@ -177,7 +185,7 @@ void Application::updateSensorsReadings()
 {
     ///TODO: refactor this --> task
     // send temp and humi every 10 seconds
-    if((millis() - m_lastSentTime) > INTERVAL)
+    if((millis() - m_lastSentTime) > READINGSUPDATEINTERVAL)
     {
         // updateing the time.
         m_lastSentTime = millis();
@@ -215,7 +223,7 @@ void Application::updateSensorsReadings()
 
                 //MQ4 readings
                 oneClient->publish(std::string(bathRoomGeneralTopic)+"mq4Analog", std::to_string(m_MQ4Sensor.readAnalogValue()));
-                oneClient->publish(std::string(bathRoomGeneralTopic)+"mq4Digital", std::to_string(m_MQ4Sensor.readDigitalValue()));
+                // oneClient->publish(std::string(bathRoomGeneralTopic)+"mq4Digital", std::to_string(m_MQ4Sensor.readDigitalValue()));
 
                 //MQ2 readings
                 oneClient->publish(std::string(bathRoomGeneralTopic)+"mq2Analog", std::to_string(m_MQ2Sensor.readAnalogValue()));
@@ -237,33 +245,65 @@ void Application::updateSensorsReadings()
 
 void Application::checkHazeredSensors()
 {
-    static bool mq4SensorValueDigital;
-    // send only when value of Digital Pin changes
-    if(mq4SensorValueDigital != m_MQ4Sensor.readDigitalValue())
+    static unsigned long lastReadTimer = millis();
+
+    // check reading every 1 second
+    if((millis() - lastReadTimer) > ONESECOND)
     {
-        // update new reading
-        mq4SensorValueDigital = m_MQ4Sensor.readDigitalValue();
+        lastReadTimer = millis();
+        //refactor this to tell-don't-ask
+        helper::state buzzerState = m_ControlGPIOsList["buzzer"]->whatIsDeviceState();
 
         ///TODO: add a way to check for analog reading and use it to turn on\off
         ///TODO: turn on\off buzzer every 0.5S to make a warning sound insteat of alway on
-        if(mq4SensorValueDigital)
+        // activate the buzzer(alarm sound) only if one of the 2 sensors detects a high consentration.
+        if(( buzzerState == helper::OFF ) &&
+            (m_MQ4Sensor.readAnalogValue() >= MQ4AnalogThrethhold) ||
+            (m_MQ2Sensor.readAnalogValue() >= MQ2AnalogThrethhold))
         {
+            // if the buzzer is off and there is a gas leakage
+            Serial.println("Detected Dangerous gas levels, starting the buzzer.");
             m_ControlGPIOsList["buzzer"]->switchOn();
+
+            // update Nymea(broker)
+            for(auto&& oneClient : m_mqttClients)
+            {
+                oneClient->publish(std::string(bathRoomGeneralTopic)+"hazeredGasState", std::string("1"));
+                oneClient->publish(std::string(bathRoomGeneralTopic)+"mq4Analog", std::to_string(m_MQ4Sensor.readAnalogValue()));
+                // oneClient->publish(std::string(bathRoomGeneralTopic)+"mq4Digital", std::to_string(mq4SensorValueDigital));
+
+                oneClient->publish(std::string(bathRoomGeneralTopic)+"mq2Analog", std::to_string(m_MQ2Sensor.readAnalogValue()));
+                // oneClient->publish(std::string(bathRoomGeneralTopic)+"mq2Digital", std::to_string(mq2SensorValueDigital));
+            }
         }
-        else
+        else if(buzzerState == helper::ON)
         {
+            for(auto&& oneClient : m_mqttClients)
+            {
+                oneClient->publish(std::string(bathRoomGeneralTopic)+"hazeredGasState", std::string("0"));
+                oneClient->publish(std::string(bathRoomGeneralTopic)+"mq4Analog", std::to_string(m_MQ4Sensor.readAnalogValue()));
+                // oneClient->publish(std::string(bathRoomGeneralTopic)+"mq4Digital", std::to_string(mq4SensorValueDigital));
+
+                oneClient->publish(std::string(bathRoomGeneralTopic)+"mq2Analog", std::to_string(m_MQ2Sensor.readAnalogValue()));
+                // oneClient->publish(std::string(bathRoomGeneralTopic)+"mq2Digital", std::to_string(mq2SensorValueDigital));
+            }
+            // buzzer is on but there is no gas leakage
+            Serial.println("gas level is normal, stopping the buzzer.");
             m_ControlGPIOsList["buzzer"]->switchOff();
         }
-
-        for(auto&& oneClient : m_mqttClients)
-        {
-            oneClient->publish(std::string(bathRoomGeneralTopic)+"mq4Analog", std::to_string(m_MQ4Sensor.readAnalogValue()));
-            oneClient->publish(std::string(bathRoomGeneralTopic)+"mq4Digital", std::to_string(mq4SensorValueDigital));
-
-            oneClient->publish(std::string(bathRoomGeneralTopic)+"mq2Analog", std::to_string(m_MQ2Sensor.readAnalogValue()));
-            // oneClient->publish(std::string(bathRoomGeneralTopic)+"mq2Digital", std::to_string(mq2SensorValueDigital));
-        }
     }
+    else
+    {
+        return;
+    }
+}
+
+void Application::checkMothion()
+{
+    static unsigned long turnOnTime;
+
+    // if(m_RCWLSensor. = )
+
 }
 
 }       //namespace app

@@ -25,6 +25,7 @@
 #include "ImqttObserver.hpp"
 #include <DHTesp.h>
 #include "gasSensor.hpp"
+#include "motionSensor.hpp"
 #include "common.hpp"
 
 
@@ -83,7 +84,7 @@ class Application : public IObserver
 
         //---------------------------------------------------------------------------
         //! \brief read DHT11, MQ4 and MQ2 sensor readings and send it to all brokers on defined
-        //! time interval (INTERVAL in common.hpp)
+        //! time interval (READINGSUPDATEINTERVAL in common.hpp)
         //!
         void updateSensorsReadings();
 
@@ -92,6 +93,12 @@ class Application : public IObserver
         //! 
         //!
         void checkHazeredSensors();
+
+        //---------------------------------------------------------------------------
+        //! \brief 
+        //! 
+        //!
+        void checkMothion();
 
         // Data members
         // std::vector<std::pair<std::string, std::string>> m_brokerInitData;
@@ -128,6 +135,12 @@ class Application : public IObserver
 
         // map must use with ptr https://stackoverflow.com/a/2281473/6184259
         std::map<std::string, std::shared_ptr<bathRoom::bathRoomGPIO>> m_ControlGPIOsList;
+
+        //---------------------------------------------------------------------------
+        //! \brief motion sensor object
+        //! 
+        //!
+        RCLWSensor m_RCWLSensor;
 };
 
 }       //namespace app

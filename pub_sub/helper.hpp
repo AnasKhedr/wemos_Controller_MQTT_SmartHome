@@ -36,6 +36,12 @@ namespace helper
         // COUNT = 3,      /*!< the number of elements in this enum */
         UNKOWN = std::numeric_limits<uint8_t>::max()
     };
+
+    enum state : bool
+    {
+        OFF = 0,            /*!< if the device state is on*/
+        ON  = 1             /*!< if the device state is off*/
+    };
     // std::function<void (char* , byte* , unsigned int)> mqttCallback;
 
     // std::pair<std::string, double> mqttCallback(char *topic, byte *payload, unsigned int length)

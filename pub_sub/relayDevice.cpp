@@ -44,8 +44,8 @@ static std::vector<uint8_t> validPins{D0,D1,D2,D3,D4,D5,D6,D7,D8,D9,D10};
 namespace bathRoom
 {
 
-    bathRoomGPIO::bathRoomGPIO(const uint8_t GPIOPin, const GPIOtype type, const std::string handle, const std::optional<uint8_t> toggelButton, const uint8_t internalResistor) :
-        m_GPIOPin(GPIOPin),
+    bathRoomGPIO::bathRoomGPIO(const uint8_t controlPin, const GPIOtype type, const std::string handle, const std::optional<uint8_t> toggelButton, const uint8_t internalResistor) :
+        m_controlPin(controlPin),
         m_toggelButton(toggelButton),
         m_type(type)
         // m_handle(handle)     // m_handle is not a member, must be initialized in its own class
@@ -55,10 +55,10 @@ namespace bathRoom
         m_currentState = true;        // specific for my need, GPIO device is active low
 
         // verify if we can use this pin or not
-        if(canUsePin(GPIOPin))
+        if(canUsePin(controlPin))
         {
             //inserting GPIO into used list
-            alreadyUsedGPIOs.push_back(GPIOPin);
+            alreadyUsedGPIOs.push_back(controlPin);
         }
         else
         {
@@ -68,11 +68,11 @@ namespace bathRoom
         }
 
         Serial.println("start of bathRoomGPIO constructor  ********************");
-        Serial.printf("gpio pin: %d, m_type: %d, handle: %s\n",GPIOPin,bool(type),handle.c_str());
+        Serial.printf("gpio pin: %d, m_type: %d, handle: %s\n",controlPin,bool(type),handle.c_str());
 
 
         Serial.println("GPIOtype::activeLow -------------------");
-        pinMode(m_GPIOPin, OUTPUT);
+        pinMode(m_controlPin, OUTPUT);
         if(m_toggelButton)
         {
             pinMode(m_toggelButton.value(), internalResistor);
@@ -133,8 +133,8 @@ namespace bathRoom
         {
             m_currentState = true;
         }
-        Serial.printf("[switchOn]setting GPIO: %d[%s] state to: %d\n", m_GPIOPin, m_handle.c_str(), m_currentState);
-        digitalWrite(m_GPIOPin, m_currentState);
+        Serial.printf("[switchOn]setting GPIO: %d[%s] state to: %d\n", m_controlPin, m_handle.c_str(), m_currentState);
+        digitalWrite(m_controlPin, m_currentState);
     }
 
     void bathRoomGPIO::switchOff()
@@ -147,16 +147,16 @@ namespace bathRoom
         {
             m_currentState = false;
         }
-        Serial.printf("[switchOff]setting GPIO: %d[%s] state to: %d\n", m_GPIOPin, m_handle.c_str(), m_currentState);
-        digitalWrite(m_GPIOPin, m_currentState);
+        Serial.printf("[switchOff]setting GPIO: %d[%s] state to: %d\n", m_controlPin, m_handle.c_str(), m_currentState);
+        digitalWrite(m_controlPin, m_currentState);
     }
 
     void bathRoomGPIO::toggel()
     {
         Serial.printf("Toggeling pin %d[%s] from state %d to %d\n",
-                        m_GPIOPin, m_handle.c_str(), m_currentState, !m_currentState);
+                        m_controlPin, m_handle.c_str(), m_currentState, !m_currentState);
         m_currentState = !(m_currentState);
-        digitalWrite(m_GPIOPin, m_currentState);
+        digitalWrite(m_controlPin, m_currentState);
     }
 
     void bathRoomGPIO::act(const helper::actions& action)
@@ -184,7 +184,7 @@ namespace bathRoom
         // if this GPIO device is was not set for a toggle pin.
         if(!m_toggelButton)
         {
-            // Serial.printf("device %s connected to pin: %d, with type m_type: %d, has not toggle pin!!\n",handle.c_str(),GPIOPin,bool(type));
+            // Serial.printf("device %s connected to pin: %d, with type m_type: %d, has not toggle pin!!\n",handle.c_str(),controlPin,bool(type));
             return;
         }
 
@@ -207,6 +207,20 @@ namespace bathRoom
         {
             Serial.println("Else");
             m_lastState = HIGH;
+        }
+    }
+
+    helper::state bathRoomGPIO::whatIsDeviceState() const
+    {
+        if(m_type == GPIOtype::activeLow)
+        {
+            // if it's active low then that mean the device is on when
+            // output low(0)
+            return static_cast<helper::state>(!m_currentState);
+        }
+        else
+        {
+            return static_cast<helper::state>(m_currentState);
         }
     }
 

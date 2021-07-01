@@ -16,12 +16,13 @@
 #include "ISimpleSensor.hpp"
 #include "common.hpp"
 #include <Adafruit_ADS1015.h>
+#include <optional>
 
 
 class gasSensor : ISimpleSensor
 {
     public:
-        gasSensor(const uint8_t& gpioPin, Adafruit_ADS1115& ads, const uint8_t channel, const uint8_t& pullUpDown = INPUT_PULLUP);
+        gasSensor(std::optional<uint8_t> gpioPin, Adafruit_ADS1115& ads, const uint8_t channel, const uint8_t& pullUpDown = INPUT_PULLUP);
 
         //---------------------------------------------------------------------------
         //! \brief Set the Input And Pull Resistor object

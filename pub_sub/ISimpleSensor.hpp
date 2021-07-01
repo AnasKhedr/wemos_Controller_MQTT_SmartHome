@@ -12,12 +12,22 @@
 // Includes
 //---------------------------------------------------------------------------
 #include <Arduino.h>
+#include <optional>
 
+#ifndef _ISIMPLESENSOR_HPP
+#define _ISIMPLESENSOR_HPP
 
 class ISimpleSensor
 {
     public:
-        ISimpleSensor(const uint8_t& gpioPin, const uint8_t& pullUpDown) {pinMode(m_sensorPin=gpioPin, pullUpDown);};
+        ISimpleSensor(std::optional<uint8_t> gpioPin, const uint8_t& pullUpDown)
+        {
+            m_sensorPin = gpioPin;
+            if(gpioPin)
+            {
+                pinMode(gpioPin.value() , pullUpDown);
+            }
+        };
 
         ISimpleSensor() = default;
 
@@ -33,6 +43,7 @@ class ISimpleSensor
 
     protected:
         // Data members
-        uint8_t m_sensorPin;
+        std::optional<uint8_t> m_sensorPin;
 };
 
+#endif  //_ISIMPLESENSOR_HPP
