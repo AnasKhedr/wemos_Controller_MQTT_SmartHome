@@ -63,10 +63,10 @@ void RCLWSensor::controlLight()
             // make sure you only turn off the light if it was turned on by sensor
             // and time for turning off passed
             if(didMotionSensorTurnOnLight &&
-                ((millis() - m_motionDetectedTime) > MOTIONSENSORONINTERVAL))
+                ((millis() - m_motionDetectedTime) > g_persistantData.motionSensorLightActiveTime))
             {
                 Serial.printf("Motion is no longer detected for %dms, turning off the light.\n",
-                                MOTIONSENSORONINTERVAL);
+                                g_persistantData.motionSensorLightActiveTime);
                 didMotionSensorTurnOnLight = false;
                 m_lightControlPin->switchOff();
             }

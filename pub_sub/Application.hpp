@@ -37,13 +37,6 @@
 namespace app
 {
 
-struct persistantData
-{
-    float MQ2AnalogThrethhold = 1.0F;
-    float MQ4AnalogThrethhold = 1.0F;
-    bool MotionEnable = true;
-};
-
 class Application : public IObserver
 {
     public:
@@ -91,7 +84,7 @@ class Application : public IObserver
 
         //---------------------------------------------------------------------------
         //! \brief read DHT11, MQ4 and MQ2 sensor readings and send it to all brokers on defined
-        //! time interval (READINGSUPDATEINTERVAL in common.hpp)
+        //! time interval (g_persistantData.sensorsReadingsUpdateInterval in common.hpp)
         //!
         void updateSensorsReadings();
 
@@ -175,12 +168,6 @@ class Application : public IObserver
         //! 
         //!
         RCLWSensor m_RCWLSensor;
-
-        //---------------------------------------------------------------------------
-        //! \brief 
-        //! 
-        //!
-        persistantData m_persistantData;
 };
 
 }       //namespace app

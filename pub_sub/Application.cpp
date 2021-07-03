@@ -26,7 +26,7 @@ namespace app
 
 Application::Application() :
     m_ads(0x48),
-    m_lastSentTime(READINGSUPDATEINTERVAL),
+    m_lastSentTime(g_persistantData.sensorsReadingsUpdateInterval),
     m_MQ4Sensor(std::nullopt, m_ads, ADSA1, INPUT),
     m_MQ2Sensor(std::nullopt, m_ads, ADSA2, INPUT),
     m_RCWLSensor(RCWLPIN)
@@ -62,9 +62,8 @@ void Application::addClient(std::string brokerIp)
 
 void Application::init()
 {
-    persistantData mqvar;
-    readFromEEPROM(MQEEPROMIDX, mqvar);
-    m_RCWLSensor.changeLightEnable(mqvar.MotionEnable);
+    readFromEEPROM(PESISTANTEEPROMIDX, g_persistantData);
+    m_RCWLSensor.changeLightEnable(g_persistantData.MotionEnable);
 
 
     Serial.println("connected to WIFI network. Blocking execution until connected!");
@@ -170,8 +169,10 @@ void Application::updateSensorsReadings()
 {
     ///TODO: refactor this --> task
     // send temp and humi every 10 seconds
-    if((millis() - m_lastSentTime) > READINGSUPDATEINTERVAL)
+    if((millis() - m_lastSentTime) > g_persistantData.sensorsReadingsUpdateInterval)
     {
+        Serial.printf("(sensorsReadingsUpdateInterval) %dms have passed, sending readings.\n",
+                        g_persistantData.sensorsReadingsUpdateInterval);
         // updateing the time.
         m_lastSentTime = millis();
 
@@ -187,7 +188,7 @@ void Application::updateSensorsReadings()
         while((m_temperature == NAN) && (counter < 250));
 
         m_humidity = m_dhtSensor.getHumidity();
-        Serial.printf("5 seconds have passed or #retries: %d, updateing Temperature: %f C and Humidity: %f%%\n",
+        Serial.printf("Interval have passed or #retries: %d, updateing Temperature: %f C and Humidity: %f%%\n",
                             counter, m_temperature, m_humidity);
 
         if(m_temperature == NAN)
@@ -243,8 +244,8 @@ void Application::checkHazeredSensors()
         ///TODO: turn on\off buzzer every 0.5S to make a warning sound insteat of alway on
         // activate the buzzer(alarm sound) only if one of the 2 sensors detects a high consentration.
         if(( buzzerState == helper::OFF ) &&
-            (m_MQ4Sensor.readAnalogValue() >= m_persistantData.MQ4AnalogThrethhold) ||
-            (m_MQ2Sensor.readAnalogValue() >= m_persistantData.MQ2AnalogThrethhold))
+            (m_MQ4Sensor.readAnalogValue() >= g_persistantData.MQ4AnalogThrethhold) ||
+            (m_MQ2Sensor.readAnalogValue() >= g_persistantData.MQ2AnalogThrethhold))
         {
             // if the buzzer is off and there is a gas leakage
             Serial.println("Detected Dangerous gas levels, starting the buzzer.");
@@ -293,24 +294,38 @@ void Application::checkForConfigUpdate(const std::string& command, const std::st
     else if(command == "MQ2ThretholdUpdate")
     {
         Serial.printf("update MQ2 Threthold command with data: %s\n", message.c_str());
-        m_persistantData.MQ2AnalogThrethhold = std::stof(message);
-        writeToEEPROM(MQEEPROMIDX, m_persistantData);
-        // writeToEEPROM<float>(MQ2EEPROMIDX, (float)12.5);
+        g_persistantData.MQ2AnalogThrethhold = std::stof(message);
+        writeToEEPROM(PESISTANTEEPROMIDX, g_persistantData);
     }
     else if(command == "MQ4ThretholdUpdate")
     {
         Serial.printf("update MQ4 Threthold command with data: %s\n", message.c_str());
-        m_persistantData.MQ4AnalogThrethhold = std::stof(message);
-        writeToEEPROM(MQEEPROMIDX, m_persistantData);
+        g_persistantData.MQ4AnalogThrethhold = std::stof(message);
+        writeToEEPROM(PESISTANTEEPROMIDX, g_persistantData);
     }
     else if(command == "MothionSensorEnable")
     {
         bool enable = std::stoi(message);
         Serial.printf("update motion sensor enable command with data: %s\n", message.c_str());
-        m_persistantData.MotionEnable = enable;
-        writeToEEPROM(MQEEPROMIDX, m_persistantData);
         m_RCWLSensor.changeLightEnable(enable);
+        g_persistantData.MotionEnable = enable;
+        writeToEEPROM(PESISTANTEEPROMIDX, g_persistantData);
     }
+    else if(command == "sensorsReadingsUpdateInterval")
+    {
+        int sensorsInterval = std::stoi(message);
+        Serial.printf("update the send interval for sensors readings command received with data: %s\n", message.c_str());
+        g_persistantData.sensorsReadingsUpdateInterval = sensorsInterval * 1000UL;  // 1000 to convert from seconds to ms
+        writeToEEPROM(PESISTANTEEPROMIDX, g_persistantData);
+    }
+    else if(command == "motionSensorLightActiveTime")
+    {
+        int motionInterval = std::stoi(message);
+        Serial.printf("update the motion sensor turn on time command received with data: %s\n", message.c_str());
+        g_persistantData.motionSensorLightActiveTime = motionInterval * 1000UL;     // 1000 to convert from seconds to ms
+        writeToEEPROM(PESISTANTEEPROMIDX, g_persistantData);
+    }
+
 }
 
 void Application::checkMothion()
@@ -324,8 +339,10 @@ void Application::writeToEEPROM(int address, T xdata)
     EEPROM.put(address, xdata);
     EEPROM.commit();
 
-    Serial.printf("Write to Persistance storage - mq2 threshold: %f, mq4 threshold: %f, MotionEnable: %d\n",
-                    xdata.MQ2AnalogThrethhold, xdata.MQ4AnalogThrethhold, xdata.MotionEnable);
+    Serial.printf("Write to Persistance storage - mq2 threshold: %f, mq4 threshold: %f, MotionEnable: %d,"
+                    " sensorsReadingsUpdateInterval: %u, motionSensorLightActiveTime: %u",
+                    xdata.MQ2AnalogThrethhold, xdata.MQ4AnalogThrethhold, xdata.MotionEnable,
+                    xdata.sensorsReadingsUpdateInterval, xdata.motionSensorLightActiveTime);
 }
 
 template<typename T>

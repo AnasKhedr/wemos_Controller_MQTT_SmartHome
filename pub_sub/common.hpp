@@ -38,22 +38,13 @@
 #define ADSA0   0
 constexpr float bitToVolt = (0.1875F/1000);
 
-#define EEPROMSIZE  10
+#define EEPROMSIZE  20
 #define TESTBROKER "192.168.1.80"
 
 #define MQ4DIGITALPIN D0
 
-#define MQEEPROMIDX 0
-#define MQ4EEPROMIDX 4
-#define MOTIONENABLEIDX 8
+#define PESISTANTEEPROMIDX 0
 
-//---------------------------------------------------------------------------
-//! \brief interval in ms after which the temperature and the Gas sensors
-//! reading will be sent to brokers
-//!
-#define READINGSUPDATEINTERVAL 5000
-
-#define MOTIONSENSORONINTERVAL 10000
 
 #define ONESECOND 1000
 
@@ -67,6 +58,19 @@ constexpr auto livingRoomGeneralTopic("/home/Room/livingroom/");
 constexpr auto receptionGeneralTopic("/home/Room/reception/");
 constexpr auto kitchenGeneralTopic("/home/Room/kitchen/");
 
+struct persistantData
+{
+    float MQ2AnalogThrethhold = 1.0F;
+    float MQ4AnalogThrethhold = 1.0F;
+    bool MotionEnable = true;
+    unsigned long sensorsReadingsUpdateInterval = 5000;     /*< interval in ms after which the temperature and the Gas sensors reading will be sent to brokers*/
+    unsigned long motionSensorLightActiveTime = 10000;
+};
 
+//---------------------------------------------------------------------------
+//! \brief a stuct containing all the data that will be save to EEPROM
+//! static to keep linker happy and avoid duplication
+//!
+static persistantData g_persistantData;
 
 #endif
