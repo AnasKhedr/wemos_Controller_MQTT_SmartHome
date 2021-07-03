@@ -33,7 +33,7 @@ bool RCLWSensor::readDigitalValue()
     return digitalRead(m_sensorStatePin);
 }
 
-void RCLWSensor::changeLightEnable(bool isEnabled)
+void RCLWSensor::changeLightEnable(const bool& isEnabled)
 {
     m_isEnabled = isEnabled;
 }

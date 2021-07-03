@@ -15,8 +15,7 @@
 //---------------------------------------------------------------------------
 #include "Application.hpp"
 #include <optional>
-
-
+#include <EEPROM.h>
 
 //---------------------------------------------------------------------------
 // Functions
@@ -32,8 +31,12 @@ Application::Application() :
     m_MQ2Sensor(std::nullopt, m_ads, ADSA2, INPUT),
     m_RCWLSensor(RCWLPIN)
 {
+    //initling EEPROM
+    EEPROM.begin(EEPROMSIZE);
+
     //starting up the serial
     Serial.begin(115200);
+    delay(10);
     Serial.println("start of Application");
 
     m_ads.setGain(GAIN_TWOTHIRDS);  // 2/3x gain +/- 6.144V  1 bit = 3mV      0.1875mV (default)
@@ -59,6 +62,10 @@ void Application::addClient(std::string brokerIp)
 
 void Application::init()
 {
+    persistantData mqvar;
+    readFromEEPROM(MQEEPROMIDX, mqvar);
+    m_RCWLSensor.changeLightEnable(mqvar.MotionEnable);
+
 
     Serial.println("connected to WIFI network. Blocking execution until connected!");
     // m_wifiManager.autoConnect(m_wifiManager.getDefaultAPName().c_str(), "1234567809");
@@ -100,47 +107,25 @@ void Application::onMqttMessage(const std::string& topic, const std::string& mes
     splitRoomAndSensor(topic, room, device);
     Serial.printf("room: %s, device: %s, and message: %s\n", room.c_str(), device.c_str(), message.c_str());
 
-    if(m_ControlGPIOsList.find(device) == m_ControlGPIOsList.end())
+    //if the received topic is for bathroom
+    room = room + '/';
+    if(room.compare(bathRoomGeneralTopic) == 0)
     {
-        if(device == "clear")
+        if(m_ControlGPIOsList.find(device) == m_ControlGPIOsList.end())
         {
-            Serial.printf("Reseting\\earasing all saved wifi network.\n");
-            m_wifiManager.resetSettings();
+            checkForConfigUpdate(device, message);
+            // Serial.printf("Device: %s does not exist!\n", device.c_str());
+            return;
         }
-        // Serial.printf("Device: %s does not exist!\n", device.c_str());
-        return;
+        else
+        {
+            m_ControlGPIOsList[device]->act(static_cast<helper::actions>(std::stoi(message)));
+        }
     }
     else
     {
-        m_ControlGPIOsList[device]->act(static_cast<helper::actions>(std::stoi(message)));
+        Serial.println("Message is not intended for bathroom, ignoring message.");
     }
-
-    // // if bathroom topic was found in the received topic [ == will also do the jop]
-    // if(topic.find(bedRoomGeneralTopic) != std::string::npos)
-    // {
-    //     // std::string key = topic.substr(idx+ std::string(bathRoomGeneralTopic).length());
-
-    // }
-    // if(topic.find(bedRoomGeneralTopic) != std::string::npos)
-    // {
-    //     Serial.println("bedRoomGeneralTopic topic");
-
-    // }
-    // if(topic.find(livingRoomGeneralTopic) != std::string::npos)
-    // {
-    //     Serial.println("livingRoomGeneralTopic topic");
-
-    // }
-    // if(topic.find(receptionGeneralTopic) != std::string::npos)
-    // {
-    //     Serial.println("receptionGeneralTopic topic");
-
-    // }
-    // if(topic.find(kitchenGeneralTopic) != std::string::npos)
-    // {
-    //     Serial.println("kitchenGeneralTopic topic");
-
-    // }
 
 }
 
@@ -168,7 +153,7 @@ void Application::run()
     checkHazeredSensors();
     updateSensorsReadings();
     checkMothion();
-    m_RCWLSensor.controlLight();
+    checkMothion();
 }
 
 void Application::splitRoomAndSensor(const std::string fullTopic, std::string& room, std::string& device)
@@ -258,8 +243,8 @@ void Application::checkHazeredSensors()
         ///TODO: turn on\off buzzer every 0.5S to make a warning sound insteat of alway on
         // activate the buzzer(alarm sound) only if one of the 2 sensors detects a high consentration.
         if(( buzzerState == helper::OFF ) &&
-            (m_MQ4Sensor.readAnalogValue() >= MQ4AnalogThrethhold) ||
-            (m_MQ2Sensor.readAnalogValue() >= MQ2AnalogThrethhold))
+            (m_MQ4Sensor.readAnalogValue() >= m_persistantData.MQ4AnalogThrethhold) ||
+            (m_MQ2Sensor.readAnalogValue() >= m_persistantData.MQ2AnalogThrethhold))
         {
             // if the buzzer is off and there is a gas leakage
             Serial.println("Detected Dangerous gas levels, starting the buzzer.");
@@ -298,12 +283,58 @@ void Application::checkHazeredSensors()
     }
 }
 
+void Application::checkForConfigUpdate(const std::string& command, const std::string& message)
+{
+    if(command == "reset")
+    {
+        Serial.println("Received reset command.");
+        m_wifiManager.resetSettings();
+    }
+    else if(command == "MQ2ThretholdUpdate")
+    {
+        Serial.printf("update MQ2 Threthold command with data: %s\n", message.c_str());
+        m_persistantData.MQ2AnalogThrethhold = std::stof(message);
+        writeToEEPROM(MQEEPROMIDX, m_persistantData);
+        // writeToEEPROM<float>(MQ2EEPROMIDX, (float)12.5);
+    }
+    else if(command == "MQ4ThretholdUpdate")
+    {
+        Serial.printf("update MQ4 Threthold command with data: %s\n", message.c_str());
+        m_persistantData.MQ4AnalogThrethhold = std::stof(message);
+        writeToEEPROM(MQEEPROMIDX, m_persistantData);
+    }
+    else if(command == "MothionSensorEnable")
+    {
+        bool enable = std::stoi(message);
+        Serial.printf("update motion sensor enable command with data: %s\n", message.c_str());
+        m_persistantData.MotionEnable = enable;
+        writeToEEPROM(MQEEPROMIDX, m_persistantData);
+        m_RCWLSensor.changeLightEnable(enable);
+    }
+}
+
 void Application::checkMothion()
 {
-    static unsigned long turnOnTime;
+    m_RCWLSensor.controlLight();
+}
 
-    // if(m_RCWLSensor. = )
+template<typename T>
+void Application::writeToEEPROM(int address, T xdata)
+{
+    EEPROM.put(address, xdata);
+    EEPROM.commit();
 
+    Serial.printf("Write to Persistance storage - mq2 threshold: %f, mq4 threshold: %f, MotionEnable: %d\n",
+                    xdata.MQ2AnalogThrethhold, xdata.MQ4AnalogThrethhold, xdata.MotionEnable);
+}
+
+template<typename T>
+void Application::readFromEEPROM(int address, T& xdata)
+{
+    EEPROM.get(address, xdata);
+
+    Serial.printf("Read from Persistance storage - mq2 threshold: %f, mq4 threshold: %f, MotionEnable: %d\n",
+                    xdata.MQ2AnalogThrethhold, xdata.MQ4AnalogThrethhold, xdata.MotionEnable);
 }
 
 }       //namespace app

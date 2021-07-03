@@ -13,6 +13,7 @@
 //---------------------------------------------------------------------------
 #include <random>
 #include <string>
+#include <EEPROM.h>
 #include "helper.hpp"
 
 

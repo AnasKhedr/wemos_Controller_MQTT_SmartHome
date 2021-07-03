@@ -107,15 +107,15 @@ namespace bathRoom
 
         // make sure pin number is valid because if it's not then you'll
         // keep getting a crash from the device and you wont know why!!!
-        for(auto oneValidPin : validPins)
-        {
-            if(oneValidPin == newPin)
-            {
-                Serial.printf("Pin number: %d is not valid!\n", newPin);
-                // the pin was found.
-                return true;
-            }
-        }
+        // for(auto oneValidPin : validPins)
+        // {
+        //     if(oneValidPin == newPin)
+        //     {
+        //         Serial.printf("Pin number: %d is not valid!\n", newPin);
+        //         // the pin was found.
+        //         return true;
+        //     }
+        // }
 
         Serial.printf("Pin number: %d can be used.\n", newPin);
         // pin is not used but it was invalid

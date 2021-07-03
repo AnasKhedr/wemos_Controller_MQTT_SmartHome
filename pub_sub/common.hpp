@@ -38,11 +38,14 @@
 #define ADSA0   0
 constexpr float bitToVolt = (0.1875F/1000);
 
+#define EEPROMSIZE  10
 #define TESTBROKER "192.168.1.80"
 
 #define MQ4DIGITALPIN D0
-#define MQ4AnalogThrethhold 1.0F
-#define MQ2AnalogThrethhold 1.0F
+
+#define MQEEPROMIDX 0
+#define MQ4EEPROMIDX 4
+#define MOTIONENABLEIDX 8
 
 //---------------------------------------------------------------------------
 //! \brief interval in ms after which the temperature and the Gas sensors

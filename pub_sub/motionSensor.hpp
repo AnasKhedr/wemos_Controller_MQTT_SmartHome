@@ -26,7 +26,7 @@ class RCLWSensor// : public ISimpleSensor
 
         bool isNoMotionAfterInterval();
 
-        void changeLightEnable(bool isEnabled);
+        void changeLightEnable(const bool& isEnabled);
 
         void controlLight();
 

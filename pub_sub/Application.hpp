@@ -37,6 +37,13 @@
 namespace app
 {
 
+struct persistantData
+{
+    float MQ2AnalogThrethhold = 1.0F;
+    float MQ4AnalogThrethhold = 1.0F;
+    bool MotionEnable = true;
+};
+
 class Application : public IObserver
 {
     public:
@@ -100,6 +107,33 @@ class Application : public IObserver
         //!
         void checkMothion();
 
+        //---------------------------------------------------------------------------
+        //! \brief 
+        //! 
+        //! \param command
+        //! \param message
+        //!
+        void checkForConfigUpdate(const std::string& command, const std::string& message);
+
+        //---------------------------------------------------------------------------
+        //! \brief API to write data to EEPROM
+        //!
+        //! \tparam T       - type to be written
+        //! \param address  - address to write at
+        //! \param xdata    - data of type T to be written
+        //!
+        template<typename T>
+        void writeToEEPROM(int address, T xdata);
+
+        //---------------------------------------------------------------------------
+        //! \brief API to read data from EEPROM
+        //!
+        //! \tparam T       - type to be read
+        //! \param address  - address to read from
+        //! \param xdata    - data of type T that will be read
+        template<typename T>
+        void readFromEEPROM(int address, T& xdata);
+
         // Data members
         // std::vector<std::pair<std::string, std::string>> m_brokerInitData;
         std::vector<std::string> m_brokerIps;
@@ -141,6 +175,12 @@ class Application : public IObserver
         //! 
         //!
         RCLWSensor m_RCWLSensor;
+
+        //---------------------------------------------------------------------------
+        //! \brief 
+        //! 
+        //!
+        persistantData m_persistantData;
 };
 
 }       //namespace app
