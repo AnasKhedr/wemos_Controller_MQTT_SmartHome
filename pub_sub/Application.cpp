@@ -45,7 +45,7 @@ Application::Application() :
 
     //factory
     ///TODO: something is fishy about the creation of those objects, check is
-    m_ControlGPIOsList["mainLight"] = std::make_shared<bathRoom::bathRoomGPIO>(MAINLIGHTPIN, bathRoom::GPIOtype::activeLow,"mainLight",VENTILATORBUTTONPIN);
+    m_ControlGPIOsList["mainLight"] = std::make_shared<bathRoom::bathRoomGPIO>(MAINLIGHTPIN, bathRoom::GPIOtype::activeLow,"mainLight",MAINLIGHTBUTTONPIN);
     m_ControlGPIOsList["washbasineLight"] = std::make_shared<bathRoom::bathRoomGPIO>(WASHBASINELIGHTPIN, bathRoom::GPIOtype::activeLow,"washbasineLight",WASHBASINELIGHTBUTTONPIN);
     m_ControlGPIOsList["ventilator"] = std::make_shared<bathRoom::bathRoomGPIO>(VENTILATORPIN, bathRoom::GPIOtype::activeLow,"ventilator",VENTILATORBUTTONPIN);
     m_ControlGPIOsList["buzzer"] = std::make_shared<bathRoom::bathRoomGPIO>(BUZZERCONTROLPIN, bathRoom::GPIOtype::activeHigh,"buzzer");
@@ -66,7 +66,7 @@ void Application::init()
     m_RCWLSensor.changeLightEnable(g_persistantData.MotionEnable);
 
 
-    Serial.println("connected to WIFI network. Blocking execution until connected!");
+    Serial.println("connecting to WIFI network. Blocking execution until connected!");
     // m_wifiManager.autoConnect(m_wifiManager.getDefaultAPName().c_str(), "1234567809");
     m_wifiManager.autoConnect();
     Serial.println("connected to WIFI network.");
@@ -80,7 +80,8 @@ void Application::init()
     for(auto& oneIp : m_brokerIps)
     {
         Serial.printf("creating a new client to broker: %s\n", oneIp.c_str());
-        m_mqttClients.push_back(std::make_shared<mqtt::mqttClient>(oneIp, "#",
+        // subscribe to the commands that we should act on only
+        m_mqttClients.push_back(std::make_shared<mqtt::mqttClient>(oneIp, std::string{bathRoomInputCommands}+"#",
             [this](char *topic, uint8_t *payload, unsigned int length) -> void
             {
                 std::string message(reinterpret_cast<char*>(payload), length);
@@ -91,11 +92,21 @@ void Application::init()
 
     // init-ing all the broker connections that were created.
     // for(auto&& oneClient : m_mqttClients)
-    for(auto& oneClient : m_mqttClients)
+    bool status = false;
+    // at least connect to one broker
+    while(!status)
     {
-        Serial.println("start initializing over m_mqttClients");
-        oneClient->init();
-        Serial.println("done initializing over m_mqttClients");
+        for(auto& oneClient : m_mqttClients)
+        {
+            Serial.println("start initializing over m_mqttClients");
+            status |= oneClient->init();
+        }
+
+        if(!status)
+        {
+            Serial.print("Failed to connect to all brokers, retrying in 2 seconds.\n");
+            delay(2000);
+        }
     }
 }
 
@@ -107,8 +118,7 @@ void Application::onMqttMessage(const std::string& topic, const std::string& mes
     Serial.printf("room: %s, device: %s, and message: %s\n", room.c_str(), device.c_str(), message.c_str());
 
     //if the received topic is for bathroom
-    room = room + '/';
-    if(room.compare(bathRoomGeneralTopic) == 0)
+    if(room.compare(bathRoomInputCommands) == 0)
     {
         if(m_ControlGPIOsList.find(device) == m_ControlGPIOsList.end())
         {
@@ -123,7 +133,7 @@ void Application::onMqttMessage(const std::string& topic, const std::string& mes
     }
     else
     {
-        Serial.println("Message is not intended for bathroom, ignoring message.");
+        Serial.println("Message is not a bathroom control message, ignoring message.");
     }
 
 }
@@ -161,7 +171,7 @@ void Application::splitRoomAndSensor(const std::string fullTopic, std::string& r
     // https://www.cplusplus.com/reference/string/string/find_last_of/
     std::size_t found = fullTopic.find_last_of("/");
     ///VIOLATION: magic number, justification: it can't be avoided!
-    room = fullTopic.substr(0,found);       // from 0 to the last / found
+    room = fullTopic.substr(0,found+1);       // from 0 to the last(including) / found
     device = fullTopic.substr(found+1);     // from just after the last / found to the end
 }
 
@@ -204,16 +214,16 @@ void Application::updateSensorsReadings()
             if(m_temperature != NAN)
             {
                 //DHT11 readings
-                oneClient->publish(std::string(bathRoomGeneralTopic)+"temp", std::to_string(m_temperature));
-                oneClient->publish(std::string(bathRoomGeneralTopic)+"humi", std::to_string(m_humidity));
+                oneClient->publish(std::string(bathRoomInfoData)+"temp", std::to_string(m_temperature));
+                oneClient->publish(std::string(bathRoomInfoData)+"humi", std::to_string(m_humidity));
 
                 //MQ4 readings
-                oneClient->publish(std::string(bathRoomGeneralTopic)+"mq4Analog", std::to_string(m_MQ4Sensor.readAnalogValue()));
-                // oneClient->publish(std::string(bathRoomGeneralTopic)+"mq4Digital", std::to_string(m_MQ4Sensor.readDigitalValue()));
+                oneClient->publish(std::string(bathRoomInfoData)+"mq4Analog", std::to_string(m_MQ4Sensor.readAnalogValue()));
+                // oneClient->publish(std::string(bathRoomInfoData)+"mq4Digital", std::to_string(m_MQ4Sensor.readDigitalValue()));
 
                 //MQ2 readings
-                oneClient->publish(std::string(bathRoomGeneralTopic)+"mq2Analog", std::to_string(m_MQ2Sensor.readAnalogValue()));
-                // oneClient->publish(std::string(bathRoomGeneralTopic)+"mq2Digital", std::to_string(mq2SensorValueDigital));
+                oneClient->publish(std::string(bathRoomInfoData)+"mq2Analog", std::to_string(m_MQ2Sensor.readAnalogValue()));
+                // oneClient->publish(std::string(bathRoomInfoData)+"mq2Digital", std::to_string(mq2SensorValueDigital));
             }
             else
             {
@@ -254,24 +264,24 @@ void Application::checkHazeredSensors()
             // update Nymea(broker)
             for(auto&& oneClient : m_mqttClients)
             {
-                oneClient->publish(std::string(bathRoomGeneralTopic)+"hazeredGasState", std::string("1"));
-                oneClient->publish(std::string(bathRoomGeneralTopic)+"mq4Analog", std::to_string(m_MQ4Sensor.readAnalogValue()));
-                // oneClient->publish(std::string(bathRoomGeneralTopic)+"mq4Digital", std::to_string(mq4SensorValueDigital));
+                oneClient->publish(std::string(bathRoomInfoData)+"hazeredGasState", std::string("1"));
+                oneClient->publish(std::string(bathRoomInfoData)+"mq4Analog", std::to_string(m_MQ4Sensor.readAnalogValue()));
+                // oneClient->publish(std::string(bathRoomInfoData)+"mq4Digital", std::to_string(mq4SensorValueDigital));
 
-                oneClient->publish(std::string(bathRoomGeneralTopic)+"mq2Analog", std::to_string(m_MQ2Sensor.readAnalogValue()));
-                // oneClient->publish(std::string(bathRoomGeneralTopic)+"mq2Digital", std::to_string(mq2SensorValueDigital));
+                oneClient->publish(std::string(bathRoomInfoData)+"mq2Analog", std::to_string(m_MQ2Sensor.readAnalogValue()));
+                // oneClient->publish(std::string(bathRoomInfoData)+"mq2Digital", std::to_string(mq2SensorValueDigital));
             }
         }
         else if(buzzerState == helper::ON)
         {
             for(auto&& oneClient : m_mqttClients)
             {
-                oneClient->publish(std::string(bathRoomGeneralTopic)+"hazeredGasState", std::string("0"));
-                oneClient->publish(std::string(bathRoomGeneralTopic)+"mq4Analog", std::to_string(m_MQ4Sensor.readAnalogValue()));
-                // oneClient->publish(std::string(bathRoomGeneralTopic)+"mq4Digital", std::to_string(mq4SensorValueDigital));
+                oneClient->publish(std::string(bathRoomInfoData)+"hazeredGasState", std::string("0"));
+                oneClient->publish(std::string(bathRoomInfoData)+"mq4Analog", std::to_string(m_MQ4Sensor.readAnalogValue()));
+                // oneClient->publish(std::string(bathRoomInfoData)+"mq4Digital", std::to_string(mq4SensorValueDigital));
 
-                oneClient->publish(std::string(bathRoomGeneralTopic)+"mq2Analog", std::to_string(m_MQ2Sensor.readAnalogValue()));
-                // oneClient->publish(std::string(bathRoomGeneralTopic)+"mq2Digital", std::to_string(mq2SensorValueDigital));
+                oneClient->publish(std::string(bathRoomInfoData)+"mq2Analog", std::to_string(m_MQ2Sensor.readAnalogValue()));
+                // oneClient->publish(std::string(bathRoomInfoData)+"mq2Digital", std::to_string(mq2SensorValueDigital));
             }
             // buzzer is on but there is no gas leakage
             Serial.println("gas level is normal, stopping the buzzer.");

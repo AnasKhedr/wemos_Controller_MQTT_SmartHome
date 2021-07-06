@@ -15,7 +15,7 @@
 //---------------------------------------------------------------------------
 
 
-#define MQTTPORT 1884
+#define MQTTPORT 1883
 
 // relay pins
 #define MAINLIGHTPIN D6
@@ -40,6 +40,8 @@ constexpr float bitToVolt = (0.1875F/1000);
 
 #define EEPROMSIZE  20
 #define TESTBROKER "192.168.1.80"
+#define PI_4_1 "192.168.1.100"
+#define PI_4_2_kitchen "192.168.1.103"
 
 #define MQ4DIGITALPIN D0
 
@@ -57,6 +59,18 @@ constexpr auto bedRoomGeneralTopic("/home/Room/bedroom/");
 constexpr auto livingRoomGeneralTopic("/home/Room/livingroom/");
 constexpr auto receptionGeneralTopic("/home/Room/reception/");
 constexpr auto kitchenGeneralTopic("/home/Room/kitchen/");
+
+//---------------------------------------------------------------------------
+//! \brief This topic will be used by the rest of the house(nymea) to
+//! configure options in the device and how it behaves.
+//!
+constexpr auto bathRoomInputCommands("/home/Room/bathroom/command/");
+
+//---------------------------------------------------------------------------
+//! \brief This topic will be used by the bathroom controller to send
+//! and update its data\sensors to the rest of the house
+//!
+constexpr auto bathRoomInfoData("/home/Room/bathroom/info/");
 
 struct persistantData
 {

@@ -70,6 +70,8 @@ void setup()
 
     Serial.println(__LINE__);
     myApp.addClient(TESTBROKER);
+    // myApp.addClient(PI_4_1);
+    // myApp.addClient(PI_4_2_kitchen);
     Serial.println(__LINE__);
     myApp.init();
     Serial.println(__LINE__);

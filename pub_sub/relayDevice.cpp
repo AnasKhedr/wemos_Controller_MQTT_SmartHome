@@ -198,14 +198,12 @@ namespace bathRoom
 
             for(auto& oneClient : mqttClients)
             {
-                Serial.println("start initializing over m_mqttClients");
-                oneClient->publishState(bathRoomGeneralTopic+m_handle, helper::actions::TOGGEL);
-                Serial.println("done initializing over m_mqttClients");
+                oneClient->publishState(bathRoomInputCommands+m_handle, helper::actions::TOGGEL);
             }
         }
         else if((state == HIGH) && (m_lastState == LOW))
         {
-            Serial.println("Else");
+            Serial.println("Button Else");
             m_lastState = HIGH;
         }
     }

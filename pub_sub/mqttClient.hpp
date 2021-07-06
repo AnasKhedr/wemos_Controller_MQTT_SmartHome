@@ -44,8 +44,8 @@ namespace mqtt
     {
         // using callback = std::function<void(char*, uint8_t*, unsigned int)>;
         public:
-
-            mqttClient(std::string ip, std::string topic, callbackType callback = mqttCallback);
+            mqttClient(std::string ip, std::string subscriptionTopic, callbackType callback = mqttCallback);
+            // mqttClient(std::string ip, std::string topic, callbackType callback = mqttCallback);
             // mqttClient(const char* ip, const char* topic, callback = helper::mqttCallback);
             // Data members
 
@@ -55,7 +55,7 @@ namespace mqtt
             void publish(const std::string& Topic, const T& payload);
 
             void loop();
-            void init();
+            bool init();
             void publishState(const std::string& topic, const std::string& payload);
             void publishState(const std::string& topic, const helper::actions& action);
 
@@ -67,6 +67,12 @@ namespace mqtt
             WiFiClient m_wifiClient;
             PubSubClient m_pubSubClient;
             std::string m_brokerIp;
+            std::string m_subscriptionTopic;
+
+            //---------------------------------------------------------------------------
+            //! \brief a variable to be set only if the broker was initalized successfully.
+            //!
+            bool isBrokerInitialized;
 
             std::vector<IObserver> m_observersList;
 

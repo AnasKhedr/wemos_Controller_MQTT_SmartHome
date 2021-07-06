@@ -19,45 +19,54 @@
 
 namespace mqtt
 {
-    mqttClient::mqttClient(std::string ip, std::string topic, callbackType callback) :
-        m_pubSubClient(ip.c_str(), MQTTPORT, callback, m_wifiClient), m_brokerIp(ip)
+    mqttClient::mqttClient(std::string ip, std::string subscriptionTopic, callbackType callback) :
+        m_pubSubClient(ip.c_str(), MQTTPORT, callback, m_wifiClient), m_brokerIp(ip), isBrokerInitialized(false)
+        ,m_subscriptionTopic(subscriptionTopic)
     {
         // connect(ip,topic);
     }
 
-    void mqttClient::init()
+    bool mqttClient::init()
     {
         //generate random clientID string
-        String clientId = "ESP8266Client-";
+        String clientId = "BathroomClient-";
         clientId += String(random(0xffff), HEX);
 
         Serial.print("[mqttClient] Generated random client ID: ");
         Serial.println(clientId.c_str());
         // Serial.printf(" to connect to broker: %s\n", ip);
 
-        while (!m_pubSubClient.connected())
+        if (!m_pubSubClient.connected())
         {
-            Serial.print("[mqttClient] Connecting to MQTT broker: ");
-            Serial.println(m_brokerIp.c_str());
+            Serial.printf("[mqttClient] Connecting to MQTT broker: %s on port: %d\n", m_brokerIp.c_str(), MQTTPORT);
 
             if (m_pubSubClient.connect(clientId.c_str()))
             {
-                if(m_pubSubClient.subscribe("#"))
+                // if(m_pubSubClient.subscribe(m_subscriptionTopic.c_str()))
+                Serial.printf("connected to %s, subscribing.\n", clientId.c_str());
+                if(m_pubSubClient.subscribe(m_subscriptionTopic.c_str()))
                 {
-                    Serial.printf("[mqttClient] connected to %s and subscribed to all topics.\n",m_brokerIp.c_str());
+                    // Serial.printf("[mqttClient] connected to %s and subscribed to topic %s.\n",m_brokerIp.c_str(),
+                    //                 m_subscriptionTopic.c_str());
+                    isBrokerInitialized = true;
+                    return true;
                 }
+                else
                 {
-                    Serial.printf("[mqttClient] connected to %s but failed subscribed to all topics.\n",m_brokerIp.c_str());
+                    // Serial.printf("[mqttClient] connected to %s but failed subscribed to topic %s.\n",m_brokerIp.c_str(),
+                    //                 m_subscriptionTopic.c_str());
+                    return false;
                 }
             }
             else
             {
-                Serial.print("[mqttClient] failed with state: ");
-                Serial.print(helper::toString(m_pubSubClient.state()).c_str());
-                Serial.print(", retrying in 2 seconds.\n");
-                delay(2000);
+                Serial.printf("[mqttClient] failed to connect to %s port %s with state: %s\n", m_brokerIp.c_str(),
+                                    MQTTPORT, helper::toString(m_pubSubClient.state()).c_str());
+                return false;
+                // delay(2000);
             }
         }
+        return false;
     }
 
     void mqttClient::loop()
@@ -67,6 +76,14 @@ namespace mqtt
 
     void mqttClient::publish(const std::string& Topic, const std::string& payload)
     {
+        // try to initialize the broker if it was no initialized successfully before
+        if(!isBrokerInitialized)
+        {
+            Serial.printf("[mqttClient] attempting to initialize %s port %s before publising.\n",
+                            m_brokerIp.c_str(), MQTTPORT);
+            init();
+        }
+
         m_pubSubClient.publish(Topic.c_str(), payload.c_str());
     }
 
