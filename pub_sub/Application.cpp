@@ -105,7 +105,9 @@ void Application::init()
         if(!status)
         {
             Serial.print("Failed to connect to all brokers, retrying in 2 seconds.\n");
-            delay(2000);
+            yield();
+            delay(1000);
+            yield();
         }
     }
 
@@ -188,7 +190,10 @@ void Application::updateSensorsReadings()
     // send temp and humi every 10 seconds
     if((millis() - m_lastSentTime) > g_persistantData.sensorsReadingsUpdateInterval)
     {
+        debugV("* This is a message of debug level VERBOSE");
         Serial.printf("(sensorsReadingsUpdateInterval) %dms have passed, sending readings.\n",
+                        g_persistantData.sensorsReadingsUpdateInterval);
+        Debug.printf("(sensorsReadingsUpdateInterval) %dms have passed, sending readings.\n",
                         g_persistantData.sensorsReadingsUpdateInterval);
         // updateing the time.
         m_lastSentTime = millis();
@@ -207,6 +212,9 @@ void Application::updateSensorsReadings()
         m_humidity = m_dhtSensor.getHumidity();
         Serial.printf("Interval have passed or #retries: %d, updateing Temperature: %f C and Humidity: %f%%\n",
                             counter, m_temperature, m_humidity);
+        Debug.printf("Interval have passed or #retries: %d, updateing Temperature: %f C and Humidity: %f%%\n",
+                            counter, m_temperature, m_humidity);
+        debugA("Sending reading to broker\n");
 
         if(m_temperature == NAN)
         {

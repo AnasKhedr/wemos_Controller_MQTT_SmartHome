@@ -136,6 +136,7 @@ namespace bathRoom
             m_currentState = true;
         }
         Serial.printf("[switchOn]setting GPIO: %d[%s] state to: %d\n", m_controlPin, m_handle.c_str(), m_currentState);
+        Debug.printf("[switchOn]setting GPIO: %d[%s] state to: %d\n", m_controlPin, m_handle.c_str(), m_currentState);
         digitalWrite(m_controlPin, m_currentState);
     }
 
@@ -150,12 +151,15 @@ namespace bathRoom
             m_currentState = false;
         }
         Serial.printf("[switchOff]setting GPIO: %d[%s] state to: %d\n", m_controlPin, m_handle.c_str(), m_currentState);
+        Debug.printf("[switchOff]setting GPIO: %d[%s] state to: %d\n", m_controlPin, m_handle.c_str(), m_currentState);
         digitalWrite(m_controlPin, m_currentState);
     }
 
     void bathRoomGPIO::toggel()
     {
         Serial.printf("Toggeling pin %d[%s] from state %d to %d\n",
+                        m_controlPin, m_handle.c_str(), m_currentState, !m_currentState);
+        Debug.printf("Toggeling pin %d[%s] from state %d to %d\n",
                         m_controlPin, m_handle.c_str(), m_currentState, !m_currentState);
         m_currentState = !(m_currentState);
         digitalWrite(m_controlPin, m_currentState);

@@ -70,8 +70,8 @@ void setup()
     // Serial.println("connected to WIFI network.");
 
     Serial.println(__LINE__);
-    myApp.addClient(TESTBROKER);
-    // myApp.addClient(PI_4_1);
+    // myApp.addClient(TESTBROKER);
+    myApp.addClient(PI_4_1);
     // myApp.addClient(PI_4_2_kitchen);
     Serial.println(__LINE__);
     myApp.init();
@@ -107,7 +107,7 @@ void setup()
     Debug.begin("RemoteDebug");
     Debug.setResetCmdEnabled(true); // Enable the reset command
     Debug.showProfiler(true); // To show profiler - time between messages of Debug
-    debugA("This is a any (always showed) - var x");
+    debugA("This is a any (always showed) - var x\n");
 }
 
 int var = 0;
@@ -115,6 +115,7 @@ void loop()
 {
     myApp.run();
     Debug.handle();
+    yield();
     // // Serial.println("start of loop");
     // timer.tick();
     // // Light1.toggel();

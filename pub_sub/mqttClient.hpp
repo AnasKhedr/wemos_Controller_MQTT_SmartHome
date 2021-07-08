@@ -68,6 +68,7 @@ namespace mqtt
             PubSubClient m_pubSubClient;
             std::string m_brokerIp;
             std::string m_subscriptionTopic;
+            std::string m_clientId;
             unsigned long m_lastReconnectAttempt;
 
             //---------------------------------------------------------------------------

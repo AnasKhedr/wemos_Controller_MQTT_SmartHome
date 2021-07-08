@@ -23,8 +23,11 @@ namespace mqtt
         m_pubSubClient(ip.c_str(), MQTTPORT, callback, m_wifiClient), m_brokerIp(ip), isBrokerInitialized(false)
         ,m_subscriptionTopic(subscriptionTopic)
         ,m_lastReconnectAttempt(0)
+        ,m_clientId("ESP8266Client-BathRoom")
     {
-        // connect(ip,topic);
+        // m_pubSubClient.setBufferSize(512);
+        // m_pubSubClient.setKeepAlive(180);
+        // m_pubSubClient.connect(m_clientId.c_str());
     }
     // mqttClient::mqttClient(std::string ip, std::string subscriptionTopic, callbackType callback) :
     //     m_pubSubClient(m_wifiClient), m_brokerIp(ip)
@@ -52,13 +55,16 @@ namespace mqtt
         {
             Serial.printf("[mqttClient] Connecting to MQTT broker: %s on port: %d\n", m_brokerIp.c_str(), MQTTPORT);
 
+            yield();
             if (m_pubSubClient.connect(clientId.c_str()))
             {
+                yield();
                 Serial.printf("connected to %s, subscribing.\n", clientId.c_str());
+                m_pubSubClient.publish("/home/bathroom/", "connected");
                 // if(m_pubSubClient.subscribe("#"))
                 if(m_pubSubClient.subscribe(m_subscriptionTopic.c_str()))
                 {
-                    delay(1000);
+                    yield();
                     Serial.printf("[mqttClient] connected to %s and subscribed to topic %s.\n",m_brokerIp.c_str(),
                                     m_subscriptionTopic.c_str());
                     isBrokerInitialized = true;
@@ -66,7 +72,7 @@ namespace mqtt
                 }
                 else
                 {
-                    delay(1000);
+                    yield();
                     Serial.printf("[mqttClient] connected to %s but failed subscribed to topic %s.\n",m_brokerIp.c_str(),
                                     m_subscriptionTopic.c_str());
                     return false;
@@ -74,7 +80,10 @@ namespace mqtt
             }
             else
             {
-                Serial.print("[mqttClient] failed to connect to port  with state:\n");
+                yield();
+                // Serial.print("[mqttClient] failed to connect to port  with state:\n");
+                Serial.print("failed, rc=");
+                Serial.print(m_pubSubClient.state());
                 ///ERROR: this line casues the crash.
                 // Serial.printf("[mqttClient] failed to connect to %s port %s with state: %s\n", m_brokerIp.c_str(),
                 //                     MQTTPORT, helper::toString(m_pubSubClient.state()).c_str());
