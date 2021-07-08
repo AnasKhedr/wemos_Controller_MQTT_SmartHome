@@ -68,6 +68,7 @@ namespace mqtt
             PubSubClient m_pubSubClient;
             std::string m_brokerIp;
             std::string m_subscriptionTopic;
+            unsigned long m_lastReconnectAttempt;
 
             //---------------------------------------------------------------------------
             //! \brief a variable to be set only if the broker was initalized successfully.

@@ -73,6 +73,8 @@ namespace bathRoom
 
         Serial.println("GPIOtype::activeLow -------------------");
         pinMode(m_controlPin, OUTPUT);
+        //default state for device is off
+        switchOff();
         if(m_toggelButton)
         {
             pinMode(m_toggelButton.value(), internalResistor);
@@ -111,13 +113,13 @@ namespace bathRoom
         {
             if(oneValidPin == newPin)
             {
-                Serial.printf("Pin number: %d is not valid!\n", newPin);
+                Serial.printf("Pin number: %d can be used.\n", newPin);
                 // the pin was found.
                 return true;
             }
         }
 
-        Serial.printf("Pin number: %d can be used.\n", newPin);
+        Serial.printf("Pin number: %d is not valid!\n", newPin);
         // pin is not used but it was invalid
         return false;
     }

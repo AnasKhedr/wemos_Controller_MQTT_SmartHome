@@ -108,6 +108,13 @@ void Application::init()
             delay(2000);
         }
     }
+
+    // for(auto& oneClient : m_mqttClients)
+    // {
+    //     Serial.println("start initializing over m_mqttClients");
+    //     oneClient->init();
+    //     Serial.println("done initializing over m_mqttClients");
+    // }
 }
 
 void Application::onMqttMessage(const std::string& topic, const std::string& message)

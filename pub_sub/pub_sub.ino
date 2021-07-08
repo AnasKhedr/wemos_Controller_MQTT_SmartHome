@@ -1,3 +1,4 @@
+
 #include <ESP8266WiFi.h> //https://github.com/esp8266/Arduino
 
 //needed for library
@@ -44,10 +45,10 @@ void setup()
     // pinMode(10,OUTPUT);
     // put your setup code here, to run once:
     // Serial.begin(115200);
-    Serial.println("start of setup");
-    delay(200);
-    pinMode(LED, OUTPUT);
-    digitalWrite(LED, LOW);
+    // Serial.println("start of setup");
+    // delay(200);
+    // pinMode(LED, OUTPUT);
+    // digitalWrite(LED, LOW);
     //WiFiManager
     //Local intialization. Once its business is done, there is no need to keep it around
     // WiFiManager wifiManager;
@@ -101,11 +102,19 @@ void setup()
     //     return true;
     // });
     // Serial.println("end of setup.");
+
+
+    Debug.begin("RemoteDebug");
+    Debug.setResetCmdEnabled(true); // Enable the reset command
+    Debug.showProfiler(true); // To show profiler - time between messages of Debug
+    debugA("This is a any (always showed) - var x");
 }
 
+int var = 0;
 void loop()
 {
     myApp.run();
+    Debug.handle();
     // // Serial.println("start of loop");
     // timer.tick();
     // // Light1.toggel();

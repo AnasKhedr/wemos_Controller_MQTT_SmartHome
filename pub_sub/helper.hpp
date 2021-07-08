@@ -20,9 +20,11 @@
 #include <PubSubClient.h>
 #include <limits>   // for numeric_limits
 #include "common.hpp"
+#include "RemoteDebug.h"
 
 
 
+static RemoteDebug Debug;
 namespace helper
 {
     //---------------------------------------------------------------------------
