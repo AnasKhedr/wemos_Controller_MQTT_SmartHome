@@ -31,6 +31,11 @@ Application::Application() :
     m_MQ2Sensor(std::nullopt, m_ads, ADSA2, INPUT),
     m_RCWLSensor(RCWLPIN)
 {
+    // m_wifiManager.setSTAStaticIPConfig(IPAddress(192,168,1,99), IPAddress(192,168,1,1), IPAddress(255,255,255,0)); // optional DNS 4th argument
+    // m_wifiManager.setConfigPortalTimeout(120);
+    // m_wifiManager.setConnectTimeout(300);
+    // m_wifiManager.setSaveConnectTimeout(300);
+
     //initling EEPROM
     EEPROM.begin(EEPROMSIZE);
 
@@ -93,9 +98,11 @@ void Application::init()
     // init-ing all the broker connections that were created.
     // for(auto&& oneClient : m_mqttClients)
     bool status = false;
+    uint8_t counter=0;
     // at least connect to one broker
-    while(!status)
+    while(!status && (counter < 5))
     {
+        counter++;
         for(auto& oneClient : m_mqttClients)
         {
             Serial.println("start initializing over m_mqttClients");
@@ -108,6 +115,12 @@ void Application::init()
             yield();
             delay(1000);
             yield();
+            delay(1000);
+        }
+
+        if(counter >= 5)
+        {
+            Serial.print("Failed to connect to all brokers, retrying during runtime\n");
         }
     }
 
@@ -343,7 +356,7 @@ void Application::checkForConfigUpdate(const std::string& command, const std::st
         g_persistantData.sensorsReadingsUpdateInterval = sensorsInterval * 1000UL;  // 1000 to convert from seconds to ms
         writeToEEPROM(PESISTANTEEPROMIDX, g_persistantData);
     }
-    else if(command == "motionSensorLightActiveTime")
+    else if(command == "mothionSensorLightActiveTime")
     {
         int motionInterval = std::stoi(message);
         Serial.printf("update the motion sensor turn on time command received with data: %s\n", message.c_str());
