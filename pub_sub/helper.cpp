@@ -69,6 +69,11 @@ namespace helper
         Serial.println("\n--------------");
     }
 
+    float converTempToNymea(float temperature)
+    {
+        return ((temperature*0.01428) + 0.286);
+    }
+
     // class logger
     // {
     //     std::string operation<<()

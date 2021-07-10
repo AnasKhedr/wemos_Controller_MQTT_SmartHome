@@ -52,6 +52,14 @@ namespace helper
 
     void printMqttMessage(const std::string& topic, const std::string message);
 
+    //---------------------------------------------------------------------------
+    //! \brief convert C temperature to a nymea friendly value that would be
+    //! understood by the generic temperature thing.
+    //! \param temperature  -- the temperature in Celsius
+    //! \return float       -- the MQTT value that would be understood by Nymea
+    //!
+    float converTempToNymea(float temperature);
+
 }   // namespace helper
 
 

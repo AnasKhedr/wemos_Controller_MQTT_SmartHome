@@ -200,11 +200,11 @@ namespace bathRoom
         {
             m_lastState = LOW;
             Serial.printf("Button Pressed for %s, toggeling state.", m_handle.c_str());
-            // toggel();
+            toggel();
 
             for(auto& oneClient : mqttClients)
             {
-                oneClient->publishState(bathRoomInputCommands+m_handle, helper::actions::TOGGEL);
+                oneClient->publishState(bathRoomInfoData+m_handle, helper::actions::TOGGEL);
             }
         }
         else if((state == HIGH) && (m_lastState == LOW))

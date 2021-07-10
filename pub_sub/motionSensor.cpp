@@ -22,7 +22,7 @@ RCLWSensor::RCLWSensor(const uint8_t& sensorStatePin) :
     m_sensorStatePin(sensorStatePin),
     // m_lightControlPin(lightControlPin),
     m_isEnabled(true),
-    didMotionSensorTurnOnLight(false)
+    m_didMotionSensorTurnOnLight(false)
 {
     Serial.printf("Motion Sensor Pin is set to: %d\n", sensorStatePin);
     pinMode(m_sensorStatePin, INPUT_PULLUP);
@@ -43,18 +43,20 @@ void RCLWSensor::setRelayControllerObject(std::shared_ptr<bathRoom::bathRoomGPIO
     m_lightControlPin = object;
 }
 
-void RCLWSensor::controlLight()
+void RCLWSensor::controlLight(std::vector<std::shared_ptr<mqtt::mqttClient>>& mqttClients)
 {
+    updateMQTTClientsWithSensorState(mqttClients);
+
     if(m_isEnabled)
     {
         // if the sensor detets motion
         // and the light state is off
         // Serial.printf("Motion reading from Pin[%d]: %d\n", m_sensorStatePin, readDigitalValue());
-        if(readDigitalValue() && (didMotionSensorTurnOnLight == false))
+        if(readDigitalValue() && (m_didMotionSensorTurnOnLight == false))
         {
             Serial.println("Motion detected turning on the Light");
             m_motionDetectedTime = millis();
-            didMotionSensorTurnOnLight = true;
+            m_didMotionSensorTurnOnLight = true;
 
             m_lightControlPin->switchOn();
         }
@@ -62,14 +64,36 @@ void RCLWSensor::controlLight()
         {
             // make sure you only turn off the light if it was turned on by sensor
             // and time for turning off passed
-            if(didMotionSensorTurnOnLight &&
+            if(m_didMotionSensorTurnOnLight &&
                 ((millis() - m_motionDetectedTime) > g_persistantData.motionSensorLightActiveTime))
             {
                 Serial.printf("Motion is no longer detected for %dms, turning off the light.\n",
                                 g_persistantData.motionSensorLightActiveTime);
-                didMotionSensorTurnOnLight = false;
+                m_didMotionSensorTurnOnLight = false;
                 m_lightControlPin->switchOff();
             }
+        }
+    }
+}
+
+void RCLWSensor::updateMQTTClientsWithSensorState(std::vector<std::shared_ptr<mqtt::mqttClient>>& mqttClients)
+{
+    static bool c_lastState, c_currentState;
+
+    // save last state and update current state
+    c_lastState = c_currentState;
+    c_currentState = readDigitalValue();
+
+    // if state hasn't chaged since last read then do nothing
+    if(c_currentState == c_lastState)
+    {
+        return;
+    }
+    else
+    {
+        for(auto&& oneClient : mqttClients)
+        {
+            oneClient->publish(std::string(bathRoomInfoData)+"mothionState", std::to_string(c_currentState));
         }
     }
 }

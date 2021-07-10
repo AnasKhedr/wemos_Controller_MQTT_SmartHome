@@ -50,6 +50,8 @@ constexpr float bitToVolt = (0.1875F/1000);
 
 #define ONESECOND 1000
 
+#define MQTTLOOPRECONNECTRETRIES 10
+
 //---------------------------------------------------------------------------
 //! \brief 
 //! \note   - auto will translate to char*

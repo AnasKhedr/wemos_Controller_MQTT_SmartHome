@@ -118,9 +118,10 @@ namespace mqtt
                 }
                 else
                 {
-                    if(numberOfRetries>5)
+                    if(numberOfRetries>MQTTLOOPRECONNECTRETRIES)
                     {
-                        Serial.printf("Max retries reached for reconnection with %s, resetting\n", m_brokerIp.c_str());
+                        Serial.printf("Max retries: %d reached for reconnection with %s, resetting ....\n",
+                                        MQTTLOOPRECONNECTRETRIES, m_brokerIp.c_str());
                         ESP.restart();
                     }
                     else

@@ -31,10 +31,12 @@ Application::Application() :
     m_MQ2Sensor(std::nullopt, m_ads, ADSA2, INPUT),
     m_RCWLSensor(RCWLPIN)
 {
-    // m_wifiManager.setSTAStaticIPConfig(IPAddress(192,168,1,99), IPAddress(192,168,1,1), IPAddress(255,255,255,0)); // optional DNS 4th argument
-    // m_wifiManager.setConfigPortalTimeout(120);
-    // m_wifiManager.setConnectTimeout(300);
-    // m_wifiManager.setSaveConnectTimeout(300);
+    m_wifiManager.setSTAStaticIPConfig(IPAddress(192,168,1,99), IPAddress(192,168,1,1), IPAddress(255,255,255,0)); // optional DNS 4th argument
+    m_wifiManager.setWiFiAutoReconnect(true);
+    m_wifiManager.setShowInfoErase(true);
+    m_wifiManager.setConfigPortalTimeout(120);
+    m_wifiManager.setConnectTimeout(300);
+    m_wifiManager.setSaveConnectTimeout(300);
 
     //initling EEPROM
     EEPROM.begin(EEPROMSIZE);
@@ -223,8 +225,9 @@ void Application::updateSensorsReadings()
         while((m_temperature == NAN) && (counter < 250));
 
         m_humidity = m_dhtSensor.getHumidity();
-        Serial.printf("Interval have passed or #retries: %d, updateing Temperature: %f C and Humidity: %f%%\n",
+        Serial.printf("Interval have passed or #retries: %d, updateing Temperature: %f C and Humidity: %f%% ",
                             counter, m_temperature, m_humidity);
+        Serial.printf("mq4Analog: %f, mq2Analog: %f\n", m_MQ4Sensor.readAnalogValue(), m_MQ2Sensor.readAnalogValue());
         Debug.printf("Interval have passed or #retries: %d, updateing Temperature: %f C and Humidity: %f%%\n",
                             counter, m_temperature, m_humidity);
         debugA("Sending reading to broker\n");
@@ -235,6 +238,7 @@ void Application::updateSensorsReadings()
         }
         else
         {
+            m_temperature = helper::converTempToNymea(m_temperature);
         }
 
         for(auto&& oneClient : m_mqttClients)
@@ -242,8 +246,8 @@ void Application::updateSensorsReadings()
             if(m_temperature != NAN)
             {
                 //DHT11 readings
-                oneClient->publish(std::string(bathRoomInfoData)+"temp", std::to_string(m_temperature));
-                oneClient->publish(std::string(bathRoomInfoData)+"humi", std::to_string(m_humidity));
+                oneClient->publish(std::string(bathRoomInfoData)+"temperature", std::to_string(m_temperature));
+                oneClient->publish(std::string(bathRoomInfoData)+"humidity", std::to_string(m_humidity));
 
                 //MQ4 readings
                 oneClient->publish(std::string(bathRoomInfoData)+"mq4Analog", std::to_string(m_MQ4Sensor.readAnalogValue()));
@@ -252,6 +256,9 @@ void Application::updateSensorsReadings()
                 //MQ2 readings
                 oneClient->publish(std::string(bathRoomInfoData)+"mq2Analog", std::to_string(m_MQ2Sensor.readAnalogValue()));
                 // oneClient->publish(std::string(bathRoomInfoData)+"mq2Digital", std::to_string(mq2SensorValueDigital));
+
+                debugA("Sending readings to Nymea.\n");
+                Debug.print("Sending readings to Nymea 2\n");
             }
             else
             {
@@ -368,7 +375,7 @@ void Application::checkForConfigUpdate(const std::string& command, const std::st
 
 void Application::checkMothion()
 {
-    m_RCWLSensor.controlLight();
+    m_RCWLSensor.controlLight(m_mqttClients);
 }
 
 template<typename T>
