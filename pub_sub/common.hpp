@@ -16,18 +16,18 @@
 
 
 #define MQTTPORT 1883
-
+///TODO: D3(GPIO0 pull up by a resistor), D4, D8 --> make them as an output pins to not messup bootmode.
 // relay pins
 #define MAINLIGHTPIN D6
 #define WASHBASINELIGHTPIN D7
-#define VENTILATORPIN D8
+#define VENTILATORPIN D5
 #define BUZZERCONTROLPIN 3      // RX
 #define RCWLPIN D0
 
 // buttons pins
 #define MAINLIGHTBUTTONPIN D3
 #define WASHBASINELIGHTBUTTONPIN D4
-#define VENTILATORBUTTONPIN D5
+#define VENTILATORBUTTONPIN D8
 
 // sensors pins
 #define DHT11PIN 10      // SD3     --> if used D2, then the program will crash
@@ -43,14 +43,13 @@ constexpr float bitToVolt = (0.1875F/1000);
 #define PI_4_1 "192.168.1.100"
 #define PI_4_2_kitchen "192.168.1.103"
 
-#define MQ4DIGITALPIN D0
-
 #define PESISTANTEEPROMIDX 0
 
 
 #define ONESECOND 1000
 
-#define MQTTLOOPRECONNECTRETRIES 10
+#define MQTTLOOPERCONNECTRETRIES 15
+#define MQTTINITCONNECTRETRIES   5
 
 //---------------------------------------------------------------------------
 //! \brief 

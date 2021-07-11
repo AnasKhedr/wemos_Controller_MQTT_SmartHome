@@ -144,6 +144,8 @@ class Application : public IObserver
         float m_humidity;
         float m_temperature;
 
+        bool m_brokerStatus;
+
         unsigned long m_lastSentTime;
 
         Timer<10> m_timerTasks;

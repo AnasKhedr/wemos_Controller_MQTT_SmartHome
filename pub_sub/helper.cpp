@@ -20,7 +20,7 @@
 namespace helper
 {
 
-    std::string toString(int mqttFailedState)
+    std::string toString(const int& mqttFailedState)
     {
         switch (mqttFailedState)
         {

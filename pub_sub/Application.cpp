@@ -34,9 +34,6 @@ Application::Application() :
     m_wifiManager.setSTAStaticIPConfig(IPAddress(192,168,1,99), IPAddress(192,168,1,1), IPAddress(255,255,255,0)); // optional DNS 4th argument
     m_wifiManager.setWiFiAutoReconnect(true);
     m_wifiManager.setShowInfoErase(true);
-    m_wifiManager.setConfigPortalTimeout(120);
-    m_wifiManager.setConnectTimeout(300);
-    m_wifiManager.setSaveConnectTimeout(300);
 
     //initling EEPROM
     EEPROM.begin(EEPROMSIZE);
@@ -75,8 +72,13 @@ void Application::init()
 
     Serial.println("connecting to WIFI network. Blocking execution until connected!");
     // m_wifiManager.autoConnect(m_wifiManager.getDefaultAPName().c_str(), "1234567809");
-    m_wifiManager.autoConnect();
     Serial.println("connected to WIFI network.");
+    // m_wifiManager.setConfigPortalTimeout(120);
+    m_wifiManager.setConfigPortalBlocking(false);
+    m_wifiManager.setWiFiAutoReconnect(true);
+    m_wifiManager.autoConnect();
+    m_wifiManager.setConnectTimeout(300);
+    m_wifiManager.setSaveConnectTimeout(300);
 
     Serial.println("initializing DHT11 and ADS1115 Sensors");
     m_dhtSensor.setup(DHT11PIN, DHTesp::DHT11);
@@ -99,39 +101,42 @@ void Application::init()
 
     // init-ing all the broker connections that were created.
     // for(auto&& oneClient : m_mqttClients)
-    bool status = false;
+    m_brokerStatus = false;
     uint8_t counter=0;
     // at least connect to one broker
-    while(!status && (counter < 5))
+    while(!m_brokerStatus && (counter < MQTTINITCONNECTRETRIES))
     {
         counter++;
         for(auto& oneClient : m_mqttClients)
         {
             Serial.println("start initializing over m_mqttClients");
-            status |= oneClient->init();
+            m_brokerStatus |= oneClient->init();
         }
 
-        if(!status)
+        if(!m_brokerStatus)
         {
             Serial.print("Failed to connect to all brokers, retrying in 2 seconds.\n");
-            yield();
-            delay(1000);
-            yield();
-            delay(1000);
+
+            //delay the 2 seconds in a semi-blocking way
+            for(uint8_t i=0; i<200; i++)
+            {
+                for(auto it = m_ControlGPIOsList.begin(); it != m_ControlGPIOsList.end(); it++)
+                {
+                    // send empty vector since the mqtt broker is not yet initialized and I don't
+                    // want the library to misbehave and crash the application.
+                    // checking if any GPIO button was pushed.
+                    it->second->checkButton();
+                }
+                yield();
+                delay(10);
+            }
         }
 
-        if(counter >= 5)
+        if(counter >= MQTTINITCONNECTRETRIES)
         {
             Serial.print("Failed to connect to all brokers, retrying during runtime\n");
         }
     }
-
-    // for(auto& oneClient : m_mqttClients)
-    // {
-    //     Serial.println("start initializing over m_mqttClients");
-    //     oneClient->init();
-    //     Serial.println("done initializing over m_mqttClients");
-    // }
 }
 
 void Application::onMqttMessage(const std::string& topic, const std::string& message)
@@ -162,31 +167,42 @@ void Application::onMqttMessage(const std::string& topic, const std::string& mes
 
 }
 
-
 void Application::run()
 {
     // Serial.println("run instance");
     m_timerTasks.tick();
-
-    // checking messages form all brokers
-    for(auto&& oneClient : m_mqttClients)
-    {
-        oneClient->loop();
-        // Serial.println("publishing.");
-        // oneClient->publish("Test",std::to_string(x).c_str());
-    }
-
-    ///TODO: refactor this --> task
-    // checking if any GPIO button was pushed.
-    for(auto it = m_ControlGPIOsList.begin(); it != m_ControlGPIOsList.end(); it++)
-    {
-        it->second->checkButton(m_mqttClients);
-    }
+    m_wifiManager.process();
 
     checkHazeredSensors();
-    updateSensorsReadings();
-    checkMothion();
-    checkMothion();
+
+    if(m_brokerStatus)
+    {
+        // checking messages form all brokers
+        for(auto&& oneClient : m_mqttClients)
+        {
+            oneClient->loop();
+            // Serial.println("publishing.");
+            // oneClient->publish("Test",std::to_string(x).c_str());
+        }
+
+        ///TODO: refactor this --> task
+        // checking if any GPIO button was pushed.
+        for(auto it = m_ControlGPIOsList.begin(); it != m_ControlGPIOsList.end(); it++)
+        {
+            it->second->checkButton(m_mqttClients);
+        }
+
+        updateSensorsReadings();
+        checkMothion();
+    }
+    else
+    {
+        for(auto it = m_ControlGPIOsList.begin(); it != m_ControlGPIOsList.end(); it++)
+        {
+            it->second->checkButton();
+        }
+    }
+
 }
 
 void Application::splitRoomAndSensor(const std::string fullTopic, std::string& room, std::string& device)
@@ -205,6 +221,13 @@ void Application::updateSensorsReadings()
     // send temp and humi every 10 seconds
     if((millis() - m_lastSentTime) > g_persistantData.sensorsReadingsUpdateInterval)
     {
+        // if(!m_brokerStatus)
+        // {
+        //     Serial.printf("(sensorsReadingsUpdateInterval) %dms have passed, but Working in offline mode, skipping updateing sensors State.\n",
+        //                 g_persistantData.sensorsReadingsUpdateInterval);
+        //     return;
+        // }
+
         debugV("* This is a message of debug level VERBOSE");
         Serial.printf("(sensorsReadingsUpdateInterval) %dms have passed, sending readings.\n",
                         g_persistantData.sensorsReadingsUpdateInterval);
@@ -241,10 +264,16 @@ void Application::updateSensorsReadings()
             m_temperature = helper::converTempToNymea(m_temperature);
         }
 
+                // Serial.println("y");
         for(auto&& oneClient : m_mqttClients)
         {
-            if(m_temperature != NAN)
+                // Serial.println("x");
+            if((m_temperature != NAN))
             {
+                Serial.println("Sending readings to Nymea.");
+                debugA("Sending readings to Nymea.\n");
+                Debug.print("Sending readings to Nymea 2\n");
+
                 //DHT11 readings
                 oneClient->publish(std::string(bathRoomInfoData)+"temperature", std::to_string(m_temperature));
                 oneClient->publish(std::string(bathRoomInfoData)+"humidity", std::to_string(m_humidity));
@@ -256,22 +285,13 @@ void Application::updateSensorsReadings()
                 //MQ2 readings
                 oneClient->publish(std::string(bathRoomInfoData)+"mq2Analog", std::to_string(m_MQ2Sensor.readAnalogValue()));
                 // oneClient->publish(std::string(bathRoomInfoData)+"mq2Digital", std::to_string(mq2SensorValueDigital));
-
-                debugA("Sending readings to Nymea.\n");
-                Debug.print("Sending readings to Nymea 2\n");
             }
             else
             {
                 Serial.println("Failed to get DHT11 readings after 250 retries!");
             }
         }
-        // Convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 3.2V):
-        // float voltage = sensorValue * (3.2 / 1023.0);
-        // print out the value you read:
-        // Serial.printf("voltage of M4 sensor is: %f, digital: %d\n",sensorValue, sensorValueDigital);
     }
-
-
 }
 
 void Application::checkHazeredSensors()
@@ -296,31 +316,39 @@ void Application::checkHazeredSensors()
             Serial.println("Detected Dangerous gas levels, starting the buzzer.");
             m_ControlGPIOsList["buzzer"]->switchOn();
 
-            // update Nymea(broker)
-            for(auto&& oneClient : m_mqttClients)
+            // update Nymea(broker) if connected
+            if(m_brokerStatus)
             {
-                oneClient->publish(std::string(bathRoomInfoData)+"hazeredGasState", std::string("1"));
-                oneClient->publish(std::string(bathRoomInfoData)+"mq4Analog", std::to_string(m_MQ4Sensor.readAnalogValue()));
-                // oneClient->publish(std::string(bathRoomInfoData)+"mq4Digital", std::to_string(mq4SensorValueDigital));
+                for(auto&& oneClient : m_mqttClients)
+                {
+                    oneClient->publish(std::string(bathRoomInfoData)+"hazeredGasState", std::string("1"));
+                    oneClient->publish(std::string(bathRoomInfoData)+"mq4Analog", std::to_string(m_MQ4Sensor.readAnalogValue()));
+                    // oneClient->publish(std::string(bathRoomInfoData)+"mq4Digital", std::to_string(mq4SensorValueDigital));
 
-                oneClient->publish(std::string(bathRoomInfoData)+"mq2Analog", std::to_string(m_MQ2Sensor.readAnalogValue()));
-                // oneClient->publish(std::string(bathRoomInfoData)+"mq2Digital", std::to_string(mq2SensorValueDigital));
+                    oneClient->publish(std::string(bathRoomInfoData)+"mq2Analog", std::to_string(m_MQ2Sensor.readAnalogValue()));
+                    // oneClient->publish(std::string(bathRoomInfoData)+"mq2Digital", std::to_string(mq2SensorValueDigital));
+                }
             }
         }
         else if(buzzerState == helper::ON)
         {
-            for(auto&& oneClient : m_mqttClients)
-            {
-                oneClient->publish(std::string(bathRoomInfoData)+"hazeredGasState", std::string("0"));
-                oneClient->publish(std::string(bathRoomInfoData)+"mq4Analog", std::to_string(m_MQ4Sensor.readAnalogValue()));
-                // oneClient->publish(std::string(bathRoomInfoData)+"mq4Digital", std::to_string(mq4SensorValueDigital));
-
-                oneClient->publish(std::string(bathRoomInfoData)+"mq2Analog", std::to_string(m_MQ2Sensor.readAnalogValue()));
-                // oneClient->publish(std::string(bathRoomInfoData)+"mq2Digital", std::to_string(mq2SensorValueDigital));
-            }
             // buzzer is on but there is no gas leakage
             Serial.println("gas level is normal, stopping the buzzer.");
             m_ControlGPIOsList["buzzer"]->switchOff();
+
+            // update Nymea(broker) if connected
+            if(m_brokerStatus)
+            {
+                for(auto&& oneClient : m_mqttClients)
+                {
+                    oneClient->publish(std::string(bathRoomInfoData)+"hazeredGasState", std::string("0"));
+                    oneClient->publish(std::string(bathRoomInfoData)+"mq4Analog", std::to_string(m_MQ4Sensor.readAnalogValue()));
+                    // oneClient->publish(std::string(bathRoomInfoData)+"mq4Digital", std::to_string(mq4SensorValueDigital));
+
+                    oneClient->publish(std::string(bathRoomInfoData)+"mq2Analog", std::to_string(m_MQ2Sensor.readAnalogValue()));
+                    // oneClient->publish(std::string(bathRoomInfoData)+"mq2Digital", std::to_string(mq2SensorValueDigital));
+                }
+            }
         }
     }
     else

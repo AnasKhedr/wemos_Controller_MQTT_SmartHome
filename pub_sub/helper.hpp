@@ -20,7 +20,7 @@
 #include <PubSubClient.h>
 #include <limits>   // for numeric_limits
 #include "common.hpp"
-#include "RemoteDebug.h"
+#include "RemoteDebug.h"    // https://github.com/JoaoLopesF/RemoteDebug --> V2.1.2
 
 
 
@@ -48,7 +48,7 @@ namespace helper
 
     // std::pair<std::string, double> mqttCallback(char *topic, byte *payload, unsigned int length)
 
-    std::string toString(int mqttFailedState);
+    std::string toString(const int& mqttFailedState);
 
     void printMqttMessage(const std::string& topic, const std::string message);
 

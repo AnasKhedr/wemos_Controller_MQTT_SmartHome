@@ -47,7 +47,7 @@ namespace mqtt
         String clientId = "ESP8266Client-BathRoom";
         // clientId += String(random(0xffff), HEX);
 
-        Serial.print("[mqttClient] Generated random client ID: ");
+        Serial.print("[mqttClient] client ID: ");
         Serial.println(clientId.c_str());
         // Serial.printf(" to connect to broker: %s\n", ip);
 
@@ -82,11 +82,11 @@ namespace mqtt
             {
                 yield();
                 // Serial.print("[mqttClient] failed to connect to port  with state:\n");
-                Serial.print("failed, rc=");
-                Serial.print(m_pubSubClient.state());
+                Serial.print("failed, rc= ");
+                Serial.println(m_pubSubClient.state());
                 ///ERROR: this line casues the crash.
                 // Serial.printf("[mqttClient] failed to connect to %s port %s with state: %s\n", m_brokerIp.c_str(),
-                //                     MQTTPORT, helper::toString(m_pubSubClient.state()).c_str());
+                //                     MQTTPORT, helper::toString(m_pubSubClient.state()));
                 return false;
                 // delay(2000);
             }
@@ -96,11 +96,10 @@ namespace mqtt
 
     void mqttClient::loop()
     {
-
         // if the ESP was disconnected, then attempt to reconnect.
         if (!m_pubSubClient.connected())
         {
-            Serial.printf("connection state to: %s  is: %d\n", m_brokerIp.c_str(), m_pubSubClient.connected());
+            // Serial.printf("connection state to: %s  is: %d\n", m_brokerIp.c_str(), m_pubSubClient.connected());
             static uint8_t numberOfRetries = 0;
             unsigned long now = millis();
 
@@ -118,15 +117,15 @@ namespace mqtt
                 }
                 else
                 {
-                    if(numberOfRetries>MQTTLOOPRECONNECTRETRIES)
+                    if(numberOfRetries > MQTTLOOPERCONNECTRETRIES)
                     {
                         Serial.printf("Max retries: %d reached for reconnection with %s, resetting ....\n",
-                                        MQTTLOOPRECONNECTRETRIES, m_brokerIp.c_str());
+                                        MQTTLOOPERCONNECTRETRIES, m_brokerIp.c_str());
                         ESP.restart();
                     }
                     else
                     {
-                        Serial.println("Failed to reconnect, retrying again in 2 seconds.");
+                        Serial.printf("Failed to reconnect retry #: %d, retrying again in 2 seconds.\n", numberOfRetries);
                     }
                 }
             }

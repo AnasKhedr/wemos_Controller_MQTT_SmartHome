@@ -90,7 +90,8 @@ namespace bathRoom
         //! 
         //! \param mqttClients
         //!
-        void checkButton(std::vector<std::shared_ptr<mqtt::mqttClient>>& mqttClients);
+        void checkButton(const std::vector<std::shared_ptr<mqtt::mqttClient>>& mqttClients);
+        void checkButton();
 
         //---------------------------------------------------------------------------
         //! \brief Get the Current State GPIO pin if configured as an output

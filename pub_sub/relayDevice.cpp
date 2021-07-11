@@ -185,7 +185,7 @@ namespace bathRoom
         }
     }
 
-    void bathRoomGPIO::checkButton(std::vector<std::shared_ptr<mqtt::mqttClient>>& mqttClients)
+    void bathRoomGPIO::checkButton(const std::vector<std::shared_ptr<mqtt::mqttClient>>& mqttClients)
     {
         // if this GPIO device is was not set for a toggle pin.
         if(!m_toggelButton)
@@ -212,6 +212,11 @@ namespace bathRoom
             Serial.println("Button Else");
             m_lastState = HIGH;
         }
+    }
+
+    void bathRoomGPIO::checkButton()
+    {
+        checkButton(std::vector<std::shared_ptr<mqtt::mqttClient>>{});
     }
 
     helper::state bathRoomGPIO::whatIsDeviceState() const
