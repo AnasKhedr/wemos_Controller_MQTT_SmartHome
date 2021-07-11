@@ -28,6 +28,8 @@ class RCLWSensor// : public ISimpleSensor
 
         void changeLightEnable(const bool& isEnabled);
 
+        void changeMotionSensorLightActiveTime(const unsigned long& motionSensorLightActiveTime);
+
         void controlLight(std::vector<std::shared_ptr<mqtt::mqttClient>>& mqttClients);
 
         void setRelayControllerObject(std::shared_ptr<bathRoom::bathRoomGPIO>& object);
@@ -44,6 +46,8 @@ class RCLWSensor// : public ISimpleSensor
         bool m_didMotionSensorTurnOnLight;
 
         unsigned long m_motionDetectedTime;
+
+        unsigned long m_motionSensorLightActiveTime;
 
         std::shared_ptr<bathRoom::bathRoomGPIO> m_lightControlPin;
 };

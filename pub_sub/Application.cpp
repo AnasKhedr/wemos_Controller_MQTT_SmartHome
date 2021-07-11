@@ -68,7 +68,12 @@ void Application::init()
 {
     readFromEEPROM(PESISTANTEEPROMIDX, g_persistantData);
     m_RCWLSensor.changeLightEnable(g_persistantData.MotionEnable);
+    m_RCWLSensor.changeMotionSensorLightActiveTime(g_persistantData.motionSensorLightActiveTime);
 
+    Serial.printf("g_persistantData data in EEPROM - mq2 threshold: %f, mq4 threshold: %f, MotionEnable: %d,"
+                    " sensorsReadingsUpdateInterval: %u, motionSensorLightActiveTime: %u\n",
+                    g_persistantData.MQ2AnalogThrethhold, g_persistantData.MQ4AnalogThrethhold, g_persistantData.MotionEnable,
+                    g_persistantData.sensorsReadingsUpdateInterval, g_persistantData.motionSensorLightActiveTime);
 
     Serial.println("connecting to WIFI network. Blocking execution until connected!");
     // m_wifiManager.autoConnect(m_wifiManager.getDefaultAPName().c_str(), "1234567809");
@@ -394,8 +399,11 @@ void Application::checkForConfigUpdate(const std::string& command, const std::st
     else if(command == "mothionSensorLightActiveTime")
     {
         int motionInterval = std::stoi(message);
-        Serial.printf("update the motion sensor turn on time command received with data: %s\n", message.c_str());
         g_persistantData.motionSensorLightActiveTime = motionInterval * 1000UL;     // 1000 to convert from seconds to ms
+        Serial.printf("update the motion sensor turn on time command received with data: %d\n",
+                         g_persistantData.motionSensorLightActiveTime);
+
+        m_RCWLSensor.changeLightEnable(g_persistantData.MotionEnable);
         writeToEEPROM(PESISTANTEEPROMIDX, g_persistantData);
     }
 
@@ -413,7 +421,7 @@ void Application::writeToEEPROM(int address, T xdata)
     EEPROM.commit();
 
     Serial.printf("Write to Persistance storage - mq2 threshold: %f, mq4 threshold: %f, MotionEnable: %d,"
-                    " sensorsReadingsUpdateInterval: %u, motionSensorLightActiveTime: %u",
+                    " sensorsReadingsUpdateInterval: %u, motionSensorLightActiveTime: %u\n",
                     xdata.MQ2AnalogThrethhold, xdata.MQ4AnalogThrethhold, xdata.MotionEnable,
                     xdata.sensorsReadingsUpdateInterval, xdata.motionSensorLightActiveTime);
 }
@@ -423,8 +431,10 @@ void Application::readFromEEPROM(int address, T& xdata)
 {
     EEPROM.get(address, xdata);
 
-    Serial.printf("Read from Persistance storage - mq2 threshold: %f, mq4 threshold: %f, MotionEnable: %d\n",
-                    xdata.MQ2AnalogThrethhold, xdata.MQ4AnalogThrethhold, xdata.MotionEnable);
+    Serial.printf("Read from Persistance storage - mq2 threshold: %f, mq4 threshold: %f, MotionEnable: %d,"
+                    " sensorsReadingsUpdateInterval: %u, motionSensorLightActiveTime: %u\n",
+                    xdata.MQ2AnalogThrethhold, xdata.MQ4AnalogThrethhold, xdata.MotionEnable,
+                    xdata.sensorsReadingsUpdateInterval, xdata.motionSensorLightActiveTime);
 }
 
 }       //namespace app

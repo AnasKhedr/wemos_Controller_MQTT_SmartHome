@@ -38,6 +38,11 @@ void RCLWSensor::changeLightEnable(const bool& isEnabled)
     m_isEnabled = isEnabled;
 }
 
+void RCLWSensor::changeMotionSensorLightActiveTime(const unsigned long& motionSensorLightActiveTime)
+{
+    m_motionSensorLightActiveTime = motionSensorLightActiveTime;
+}
+
 void RCLWSensor::setRelayControllerObject(std::shared_ptr<bathRoom::bathRoomGPIO>& object)
 {
     m_lightControlPin = object;
@@ -65,10 +70,10 @@ void RCLWSensor::controlLight(std::vector<std::shared_ptr<mqtt::mqttClient>>& mq
             // make sure you only turn off the light if it was turned on by sensor
             // and time for turning off passed
             if(m_didMotionSensorTurnOnLight &&
-                ((millis() - m_motionDetectedTime) > g_persistantData.motionSensorLightActiveTime))
+                ((millis() - m_motionDetectedTime) > m_motionSensorLightActiveTime))
             {
                 Serial.printf("Motion is no longer detected for %dms, turning off the light.\n",
-                                g_persistantData.motionSensorLightActiveTime);
+                                m_motionSensorLightActiveTime);
                 m_didMotionSensorTurnOnLight = false;
                 m_lightControlPin->switchOff();
             }
