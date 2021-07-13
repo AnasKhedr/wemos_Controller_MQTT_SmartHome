@@ -47,7 +47,8 @@ namespace bathRoom
     bathRoomGPIO::bathRoomGPIO(const uint8_t controlPin, const GPIOtype type, const std::string handle, const std::optional<uint8_t> toggelButton, const uint8_t internalResistor) :
         m_controlPin(controlPin),
         m_toggelButton(toggelButton),
-        m_type(type)
+        m_type(type),
+        m_buttonDoAct(false)
         // m_handle(handle)     // m_handle is not a member, must be initialized in its own class
     {
         // initializing handler
@@ -194,23 +195,32 @@ namespace bathRoom
             return;
         }
 
-        // rising edge
+        // read the state of the switch into a local variable:
         bool state = digitalRead(m_toggelButton.value());
-        if((state == LOW) && (m_lastState == HIGH))
-        {
-            m_lastState = LOW;
-            Serial.printf("Button Pressed for %s, toggeling state.", m_handle.c_str());
-            toggel();
 
-            for(auto& oneClient : mqttClients)
-            {
-                oneClient->publishState(bathRoomInfoData+m_handle, helper::actions::TOGGEL);
-            }
-        }
-        else if((state == HIGH) && (m_lastState == LOW))
+        // If button is pushed (pulled up)
+        if(state == LOW)
         {
-            Serial.println("Button Else");
-            m_lastState = HIGH;
+            // make sure deboucing time have passsed and we didn't act on the button yet
+            if (m_buttonDoAct &&
+                ((millis() - m_lastDebounceTime) > BUTTONDEBOUNCINGDELAY_MS))
+            {
+                m_buttonDoAct = false;
+
+                Serial.printf("Button Pressed for %s, toggeling state.", m_handle.c_str());
+                toggel();
+
+                for(auto& oneClient : mqttClients)
+                {
+                    oneClient->publishState(bathRoomInfoData+m_handle, helper::actions::TOGGEL);
+                }
+            }
+
+        }
+        else
+        {
+            m_lastDebounceTime = millis();
+            m_buttonDoAct = true;
         }
     }
 

@@ -403,7 +403,7 @@ void Application::checkForConfigUpdate(const std::string& command, const std::st
         Serial.printf("update the motion sensor turn on time command received with data: %d\n",
                          g_persistantData.motionSensorLightActiveTime);
 
-        m_RCWLSensor.changeLightEnable(g_persistantData.MotionEnable);
+        m_RCWLSensor.changeMotionSensorLightActiveTime(g_persistantData.motionSensorLightActiveTime);
         writeToEEPROM(PESISTANTEEPROMIDX, g_persistantData);
     }
 

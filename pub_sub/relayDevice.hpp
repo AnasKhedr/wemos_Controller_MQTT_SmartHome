@@ -126,6 +126,14 @@ namespace bathRoom
         //! \return false   - if pin is not used and can be used
         //!
         bool canUsePin(const uint8_t& newPin) const;
+
+        //---------------------------------------------------------------------------
+        //! \brief a flage denoting when we should consider a button pressed(act on)
+        //! true - means you should consider button press as a new press and act
+        //! false- means that we already acted on the button press and no further action is needed
+        bool m_buttonDoAct;
+
+        unsigned long m_lastDebounceTime;
     };
 
 } // namespace bathRoom
