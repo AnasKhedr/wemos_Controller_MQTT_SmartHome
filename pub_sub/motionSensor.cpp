@@ -43,7 +43,7 @@ void RCLWSensor::changeMotionSensorLightActiveTime(const unsigned long& motionSe
     m_motionSensorLightActiveTime = motionSensorLightActiveTime;
 }
 
-void RCLWSensor::setRelayControllerObject(std::shared_ptr<bathRoom::bathRoomGPIO>& object)
+void RCLWSensor::setRelayControllerObject(std::shared_ptr<office::officeGPIO>& object)
 {
     m_lightControlPin = object;
 }
@@ -98,7 +98,7 @@ void RCLWSensor::updateMQTTClientsWithSensorState(std::vector<std::shared_ptr<mq
     {
         for(auto&& oneClient : mqttClients)
         {
-            oneClient->publish(std::string(bathRoomInfoData)+"mothionState", std::to_string(c_currentState));
+            oneClient->publish(std::string(officeInfoData)+"mothionState", std::to_string(c_currentState));
         }
     }
 }

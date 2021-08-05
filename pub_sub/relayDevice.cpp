@@ -41,10 +41,10 @@ static std::vector<uint8_t> validPins{D0,D1,D2,D3,D4,D5,D6,D7,D8,D9,D10};
 //---------------------------------------------------------------------------
 // Functions
 //---------------------------------------------------------------------------
-namespace bathRoom
+namespace office
 {
 
-    bathRoomGPIO::bathRoomGPIO(const uint8_t controlPin, const GPIOtype type, const std::string handle, const std::optional<uint8_t> toggelButton, const uint8_t internalResistor) :
+    officeGPIO::officeGPIO(const uint8_t controlPin, const GPIOtype type, const std::string handle, const std::optional<uint8_t> toggelButton, const uint8_t internalResistor) :
         m_controlPin(controlPin),
         m_toggelButton(toggelButton),
         m_type(type),
@@ -68,7 +68,7 @@ namespace bathRoom
             return;
         }
 
-        Serial.println("start of bathRoomGPIO constructor  ********************");
+        Serial.println("start of officeGPIO constructor  ********************");
         Serial.printf("gpio pin: %d, m_type: %d, handle: %s\n",controlPin,bool(type),handle.c_str());
 
 
@@ -92,10 +92,10 @@ namespace bathRoom
         //     return true;
         // });
 
-        Serial.println("end of bathRoomGPIO constructor ===================");
+        Serial.println("end of officeGPIO constructor ===================");
     }
 
-    bool bathRoomGPIO::canUsePin(const uint8_t& newPin) const
+    bool officeGPIO::canUsePin(const uint8_t& newPin) const
     {
         // make sure that the pin is not already used by another object
         for(auto pin : alreadyUsedGPIOs)
@@ -125,7 +125,7 @@ namespace bathRoom
         return false;
     }
 
-    void bathRoomGPIO::switchOn()
+    void officeGPIO::switchOn()
     {
         // my devices are active low
         if(m_type == GPIOtype::activeLow)
@@ -141,7 +141,7 @@ namespace bathRoom
         digitalWrite(m_controlPin, m_currentState);
     }
 
-    void bathRoomGPIO::switchOff()
+    void officeGPIO::switchOff()
     {
         if(m_type == GPIOtype::activeLow)
         {
@@ -156,7 +156,7 @@ namespace bathRoom
         digitalWrite(m_controlPin, m_currentState);
     }
 
-    void bathRoomGPIO::toggel()
+    void officeGPIO::toggel()
     {
         Serial.printf("Toggeling pin %d[%s] from state %d to %d\n",
                         m_controlPin, m_handle.c_str(), m_currentState, !m_currentState);
@@ -166,7 +166,7 @@ namespace bathRoom
         digitalWrite(m_controlPin, m_currentState);
     }
 
-    void bathRoomGPIO::act(const helper::actions& action)
+    void officeGPIO::act(const helper::actions& action)
     {
         switch (action)
         {
@@ -186,7 +186,7 @@ namespace bathRoom
         }
     }
 
-    void bathRoomGPIO::checkButton(const std::vector<std::shared_ptr<mqtt::mqttClient>>& mqttClients)
+    void officeGPIO::checkButton(const std::vector<std::shared_ptr<mqtt::mqttClient>>& mqttClients)
     {
         // if this GPIO device is was not set for a toggle pin.
         if(!m_toggelButton)
@@ -207,12 +207,12 @@ namespace bathRoom
             {
                 m_buttonDoAct = false;
 
-                Serial.printf("Button Pressed for %s, toggeling state.", m_handle.c_str());
+                Serial.printf("Button Pressed(GPIO%d) for %s, toggeling state.", m_toggelButton.value(), m_handle.c_str());
                 toggel();
 
                 for(auto& oneClient : mqttClients)
                 {
-                    oneClient->publishState(bathRoomInfoData+m_handle, helper::actions::TOGGEL);
+                    oneClient->publishState(officeInfoData+m_handle, helper::actions::TOGGEL);
                 }
             }
 
@@ -224,12 +224,12 @@ namespace bathRoom
         }
     }
 
-    void bathRoomGPIO::checkButton()
+    void officeGPIO::checkButton()
     {
         checkButton(std::vector<std::shared_ptr<mqtt::mqttClient>>{});
     }
 
-    helper::state bathRoomGPIO::whatIsDeviceState() const
+    helper::state officeGPIO::whatIsDeviceState() const
     {
         if(m_type == GPIOtype::activeLow)
         {
@@ -243,4 +243,4 @@ namespace bathRoom
         }
     }
 
-} // namespace bathRoom
+} // namespace office

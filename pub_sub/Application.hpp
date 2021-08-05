@@ -74,7 +74,7 @@ class Application : public IObserver
 
         //---------------------------------------------------------------------------
         //! \brief slits the topic to room and sensor
-        //! \details if the topic is /home/Room/bathroom/light1 then \p room will be /home/Room/bathroom
+        //! \details if the topic is /home/Room/office/light1 then \p room will be /home/Room/office
         //! and \p sensor will be light1
         //! \param fullTopic    -- [in]  the full topic received by mqtt
         //! \param room         -- [out] the name of the room
@@ -156,20 +156,14 @@ class Application : public IObserver
         //! \brief object providing the reading for all Analog to digital channels
         //! to be used by other objects (sensor)
         //!
-        Adafruit_ADS1115 m_ads;
+        // Adafruit_ADS1115 m_ads;
 
-        gasSensor m_MQ4Sensor;
+        // gasSensor m_MQ4Sensor;
 
-        gasSensor m_MQ2Sensor;
+        // gasSensor m_MQ2Sensor;
 
         // map must use with ptr https://stackoverflow.com/a/2281473/6184259
-        std::map<std::string, std::shared_ptr<bathRoom::bathRoomGPIO>> m_ControlGPIOsList;
-
-        //---------------------------------------------------------------------------
-        //! \brief motion sensor object
-        //! 
-        //!
-        RCLWSensor m_RCWLSensor;
+        std::map<std::string, std::shared_ptr<office::officeGPIO>> m_ControlGPIOsList;
 };
 
 }       //namespace app

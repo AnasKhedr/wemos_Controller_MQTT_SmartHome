@@ -18,16 +18,18 @@
 #define MQTTPORT 1883
 ///TODO: D3(GPIO0 pull up by a resistor), D4, D8 --> make them as an output pins to not messup bootmode.
 // relay pins
-#define MAINLIGHTPIN D6
-#define WASHBASINELIGHTPIN D7
-#define VENTILATORPIN D5
-#define BUZZERCONTROLPIN 3      // RX
-#define RCWLPIN D0
+#define MAINLIGHTPIN D0
+#define NEERLIGHTPIN D1
+#define FARLIGHTPIN D2
+#define DOORLIGHTPIN D3
+#define ABLEEKLIGHTPIN D4
 
 // buttons pins
-#define MAINLIGHTBUTTONPIN D3
-#define WASHBASINELIGHTBUTTONPIN D4
-#define VENTILATORBUTTONPIN D8
+#define MAINLIGHTBUTTONPIN D5
+#define NEERLIGHTBUTTONPIN D6
+#define FARBUTTONPIN D7
+#define DOORBUTTONPIN 1     // GPIO1 - Tx
+#define ABLEEKBUTTONPIN 3   // GPIO3 - Rx
 
 // sensors pins
 #define DHT11PIN 10      // SD3     --> if used D2, then the program will crash
@@ -47,7 +49,7 @@ constexpr float bitToVolt = (0.1875F/1000);
 
 
 #define ONESECOND 1000
-#define BUTTONDEBOUNCINGDELAY_MS 50
+#define BUTTONDEBOUNCINGDELAY_MS 100
 
 #define MQTTLOOPERCONNECTRETRIES 15
 #define MQTTINITCONNECTRETRIES   5
@@ -66,13 +68,13 @@ constexpr auto kitchenGeneralTopic("/home/Room/kitchen/");
 //! \brief This topic will be used by the rest of the house(nymea) to
 //! configure options in the device and how it behaves.
 //!
-constexpr auto bathRoomInputCommands("/home/Room/bathroom/command/");
+constexpr auto officeInputCommands("/home/Room/office/command/");
 
 //---------------------------------------------------------------------------
 //! \brief This topic will be used by the bathroom controller to send
 //! and update its data\sensors to the rest of the house
 //!
-constexpr auto bathRoomInfoData("/home/Room/bathroom/info/");
+constexpr auto officeInfoData("/home/Room/office/info/");
 
 struct persistantData
 {

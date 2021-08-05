@@ -25,13 +25,12 @@ namespace app
 {
 
 Application::Application() :
-    m_ads(0x48),
-    m_lastSentTime(g_persistantData.sensorsReadingsUpdateInterval),
-    m_MQ4Sensor(std::nullopt, m_ads, ADSA1, INPUT),
-    m_MQ2Sensor(std::nullopt, m_ads, ADSA2, INPUT),
-    m_RCWLSensor(RCWLPIN)
+    // m_ads(0x48),
+    m_lastSentTime(g_persistantData.sensorsReadingsUpdateInterval)
+    // m_MQ4Sensor(std::nullopt, m_ads, ADSA1, INPUT),
+    // m_MQ2Sensor(std::nullopt, m_ads, ADSA2, INPUT)
 {
-    m_wifiManager.setSTAStaticIPConfig(IPAddress(192,168,1,99), IPAddress(192,168,1,1), IPAddress(255,255,255,0)); // optional DNS 4th argument
+    m_wifiManager.setSTAStaticIPConfig(IPAddress(192,168,1,98), IPAddress(192,168,1,1), IPAddress(255,255,255,0)); // optional DNS 4th argument
     m_wifiManager.setWiFiAutoReconnect(true);
     m_wifiManager.setShowInfoErase(true);
 
@@ -43,18 +42,18 @@ Application::Application() :
     delay(10);
     Serial.println("start of Application");
 
-    m_ads.setGain(GAIN_TWOTHIRDS);  // 2/3x gain +/- 6.144V  1 bit = 3mV      0.1875mV (default)
+    // m_ads.setGain(GAIN_TWOTHIRDS);  // 2/3x gain +/- 6.144V  1 bit = 3mV      0.1875mV (default)
     // m_wifiManager.resetSettings();
     // m_wifiManager.setAPStaticIPConfig(IPAddress(192,168,1,110), IPAddress(192,168,1,1), IPAddress(255,255,255,0));
 
     //factory
     ///TODO: something is fishy about the creation of those objects, check is
-    m_ControlGPIOsList["mainLight"] = std::make_shared<bathRoom::bathRoomGPIO>(MAINLIGHTPIN, bathRoom::GPIOtype::activeLow,"mainLight",MAINLIGHTBUTTONPIN);
-    m_ControlGPIOsList["washbasineLight"] = std::make_shared<bathRoom::bathRoomGPIO>(WASHBASINELIGHTPIN, bathRoom::GPIOtype::activeLow,"washbasineLight",WASHBASINELIGHTBUTTONPIN);
-    m_ControlGPIOsList["ventilator"] = std::make_shared<bathRoom::bathRoomGPIO>(VENTILATORPIN, bathRoom::GPIOtype::activeLow,"ventilator",VENTILATORBUTTONPIN);
-    m_ControlGPIOsList["buzzer"] = std::make_shared<bathRoom::bathRoomGPIO>(BUZZERCONTROLPIN, bathRoom::GPIOtype::activeHigh,"buzzer");
+    m_ControlGPIOsList["mainLight"] = std::make_shared<office::officeGPIO>(MAINLIGHTPIN, office::GPIOtype::activeLow,"mainLight",MAINLIGHTBUTTONPIN);
+    m_ControlGPIOsList["neerLight"] = std::make_shared<office::officeGPIO>(NEERLIGHTPIN, office::GPIOtype::activeLow,"neerLight",NEERLIGHTBUTTONPIN);
+    m_ControlGPIOsList["farLight"] = std::make_shared<office::officeGPIO>(FARLIGHTPIN, office::GPIOtype::activeLow,"farLight",FARBUTTONPIN);
+    m_ControlGPIOsList["doorLight"] = std::make_shared<office::officeGPIO>(DOORLIGHTPIN, office::GPIOtype::activeLow,"doorLight", DOORBUTTONPIN);
+    m_ControlGPIOsList["ableekLight"] = std::make_shared<office::officeGPIO>(ABLEEKLIGHTPIN, office::GPIOtype::activeLow,"ableekLight", ABLEEKBUTTONPIN);
 
-    m_RCWLSensor.setRelayControllerObject(m_ControlGPIOsList["mainLight"]);
 
 }
 
@@ -67,8 +66,6 @@ void Application::addClient(std::string brokerIp)
 void Application::init()
 {
     readFromEEPROM(PESISTANTEEPROMIDX, g_persistantData);
-    m_RCWLSensor.changeLightEnable(g_persistantData.MotionEnable);
-    m_RCWLSensor.changeMotionSensorLightActiveTime(g_persistantData.motionSensorLightActiveTime);
 
     Serial.printf("g_persistantData data in EEPROM - mq2 threshold: %f, mq4 threshold: %f, MotionEnable: %d,"
                     " sensorsReadingsUpdateInterval: %u, motionSensorLightActiveTime: %u\n",
@@ -87,7 +84,7 @@ void Application::init()
 
     Serial.println("initializing DHT11 and ADS1115 Sensors");
     m_dhtSensor.setup(DHT11PIN, DHTesp::DHT11);
-    m_ads.begin();
+    // m_ads.begin();
     Serial.println("done initializing dht11 and ADS1115.");
 
     // creating clients to all the different brokerIps
@@ -95,7 +92,7 @@ void Application::init()
     {
         Serial.printf("creating a new client to broker: %s\n", oneIp.c_str());
         // subscribe to the commands that we should act on only
-        m_mqttClients.push_back(std::make_shared<mqtt::mqttClient>(oneIp, std::string{bathRoomInputCommands}+"#",
+        m_mqttClients.push_back(std::make_shared<mqtt::mqttClient>(oneIp, std::string{officeInputCommands}+"#",
             [this](char *topic, uint8_t *payload, unsigned int length) -> void
             {
                 std::string message(reinterpret_cast<char*>(payload), length);
@@ -151,8 +148,8 @@ void Application::onMqttMessage(const std::string& topic, const std::string& mes
     splitRoomAndSensor(topic, room, device);
     Serial.printf("room: %s, device: %s, and message: %s\n", room.c_str(), device.c_str(), message.c_str());
 
-    //if the received topic is for bathroom
-    if(room.compare(bathRoomInputCommands) == 0)
+    //if the received topic is for office
+    if(room.compare(officeInputCommands) == 0)
     {
         if(m_ControlGPIOsList.find(device) == m_ControlGPIOsList.end())
         {
@@ -167,7 +164,7 @@ void Application::onMqttMessage(const std::string& topic, const std::string& mes
     }
     else
     {
-        Serial.println("Message is not a bathroom control message, ignoring message.");
+        Serial.println("Message is not a office control message, ignoring message.");
     }
 
 }
@@ -178,7 +175,7 @@ void Application::run()
     m_timerTasks.tick();
     m_wifiManager.process();
 
-    checkHazeredSensors();
+    // checkHazeredSensors();
 
     if(m_brokerStatus)
     {
@@ -255,7 +252,7 @@ void Application::updateSensorsReadings()
         m_humidity = m_dhtSensor.getHumidity();
         Serial.printf("Interval have passed or #retries: %d, updateing Temperature: %f C and Humidity: %f%% ",
                             counter, m_temperature, m_humidity);
-        Serial.printf("mq4Analog: %f, mq2Analog: %f\n", m_MQ4Sensor.readAnalogValue(), m_MQ2Sensor.readAnalogValue());
+        // Serial.printf("mq4Analog: %f, mq2Analog: %f\n", m_MQ4Sensor.readAnalogValue(), m_MQ2Sensor.readAnalogValue());
         Debug.printf("Interval have passed or #retries: %d, updateing Temperature: %f C and Humidity: %f%%\n",
                             counter, m_temperature, m_humidity);
         debugA("Sending reading to broker\n");
@@ -280,16 +277,16 @@ void Application::updateSensorsReadings()
                 Debug.print("Sending readings to Nymea 2\n");
 
                 //DHT11 readings
-                oneClient->publish(std::string(bathRoomInfoData)+"temperature", std::to_string(m_temperature));
-                oneClient->publish(std::string(bathRoomInfoData)+"humidity", std::to_string(m_humidity));
+                oneClient->publish(std::string(officeInfoData)+"temperature", std::to_string(m_temperature));
+                oneClient->publish(std::string(officeInfoData)+"humidity", std::to_string(m_humidity));
 
                 //MQ4 readings
-                oneClient->publish(std::string(bathRoomInfoData)+"mq4Analog", std::to_string(m_MQ4Sensor.readAnalogValue()));
-                // oneClient->publish(std::string(bathRoomInfoData)+"mq4Digital", std::to_string(m_MQ4Sensor.readDigitalValue()));
+                // oneClient->publish(std::string(officeInfoData)+"mq4Analog", std::to_string(m_MQ4Sensor.readAnalogValue()));
+                // // oneClient->publish(std::string(officeInfoData)+"mq4Digital", std::to_string(m_MQ4Sensor.readDigitalValue()));
 
                 //MQ2 readings
-                oneClient->publish(std::string(bathRoomInfoData)+"mq2Analog", std::to_string(m_MQ2Sensor.readAnalogValue()));
-                // oneClient->publish(std::string(bathRoomInfoData)+"mq2Digital", std::to_string(mq2SensorValueDigital));
+                // oneClient->publish(std::string(officeInfoData)+"mq2Analog", std::to_string(m_MQ2Sensor.readAnalogValue()));
+                // // oneClient->publish(std::string(officeInfoData)+"mq2Digital", std::to_string(mq2SensorValueDigital));
             }
             else
             {
@@ -299,68 +296,68 @@ void Application::updateSensorsReadings()
     }
 }
 
-void Application::checkHazeredSensors()
-{
-    static unsigned long lastReadTimer = millis();
+// void Application::checkHazeredSensors()
+// {
+//     static unsigned long lastReadTimer = millis();
 
-    // check reading every 1 second
-    if((millis() - lastReadTimer) > ONESECOND)
-    {
-        lastReadTimer = millis();
-        //refactor this to tell-don't-ask
-        helper::state buzzerState = m_ControlGPIOsList["buzzer"]->whatIsDeviceState();
+//     // check reading every 1 second
+//     if((millis() - lastReadTimer) > ONESECOND)
+//     {
+//         lastReadTimer = millis();
+//         //refactor this to tell-don't-ask
+//         helper::state buzzerState = m_ControlGPIOsList["buzzer"]->whatIsDeviceState();
 
-        ///TODO: add a way to check for analog reading and use it to turn on\off
-        ///TODO: turn on\off buzzer every 0.5S to make a warning sound insteat of alway on
-        // activate the buzzer(alarm sound) only if one of the 2 sensors detects a high consentration.
-        if(( buzzerState == helper::OFF ) &&
-            (m_MQ4Sensor.readAnalogValue() >= g_persistantData.MQ4AnalogThrethhold) ||
-            (m_MQ2Sensor.readAnalogValue() >= g_persistantData.MQ2AnalogThrethhold))
-        {
-            // if the buzzer is off and there is a gas leakage
-            Serial.println("Detected Dangerous gas levels, starting the buzzer.");
-            m_ControlGPIOsList["buzzer"]->switchOn();
+//         ///TODO: add a way to check for analog reading and use it to turn on\off
+//         ///TODO: turn on\off buzzer every 0.5S to make a warning sound insteat of alway on
+//         // activate the buzzer(alarm sound) only if one of the 2 sensors detects a high consentration.
+//         if(( buzzerState == helper::OFF ) &&
+//             (m_MQ4Sensor.readAnalogValue() >= g_persistantData.MQ4AnalogThrethhold) ||
+//             (m_MQ2Sensor.readAnalogValue() >= g_persistantData.MQ2AnalogThrethhold))
+//         {
+//             // if the buzzer is off and there is a gas leakage
+//             Serial.println("Detected Dangerous gas levels, starting the buzzer.");
+//             m_ControlGPIOsList["buzzer"]->switchOn();
 
-            // update Nymea(broker) if connected
-            if(m_brokerStatus)
-            {
-                for(auto&& oneClient : m_mqttClients)
-                {
-                    oneClient->publish(std::string(bathRoomInfoData)+"hazeredGasState", std::string("1"));
-                    oneClient->publish(std::string(bathRoomInfoData)+"mq4Analog", std::to_string(m_MQ4Sensor.readAnalogValue()));
-                    // oneClient->publish(std::string(bathRoomInfoData)+"mq4Digital", std::to_string(mq4SensorValueDigital));
+//             // update Nymea(broker) if connected
+//             if(m_brokerStatus)
+//             {
+//                 for(auto&& oneClient : m_mqttClients)
+//                 {
+//                     oneClient->publish(std::string(officeInfoData)+"hazeredGasState", std::string("1"));
+//                     oneClient->publish(std::string(officeInfoData)+"mq4Analog", std::to_string(m_MQ4Sensor.readAnalogValue()));
+//                     // oneClient->publish(std::string(officeInfoData)+"mq4Digital", std::to_string(mq4SensorValueDigital));
 
-                    oneClient->publish(std::string(bathRoomInfoData)+"mq2Analog", std::to_string(m_MQ2Sensor.readAnalogValue()));
-                    // oneClient->publish(std::string(bathRoomInfoData)+"mq2Digital", std::to_string(mq2SensorValueDigital));
-                }
-            }
-        }
-        else if(buzzerState == helper::ON)
-        {
-            // buzzer is on but there is no gas leakage
-            Serial.println("gas level is normal, stopping the buzzer.");
-            m_ControlGPIOsList["buzzer"]->switchOff();
+//                     oneClient->publish(std::string(officeInfoData)+"mq2Analog", std::to_string(m_MQ2Sensor.readAnalogValue()));
+//                     // oneClient->publish(std::string(officeInfoData)+"mq2Digital", std::to_string(mq2SensorValueDigital));
+//                 }
+//             }
+//         }
+//         else if(buzzerState == helper::ON)
+//         {
+//             // buzzer is on but there is no gas leakage
+//             Serial.println("gas level is normal, stopping the buzzer.");
+//             m_ControlGPIOsList["buzzer"]->switchOff();
 
-            // update Nymea(broker) if connected
-            if(m_brokerStatus)
-            {
-                for(auto&& oneClient : m_mqttClients)
-                {
-                    oneClient->publish(std::string(bathRoomInfoData)+"hazeredGasState", std::string("0"));
-                    oneClient->publish(std::string(bathRoomInfoData)+"mq4Analog", std::to_string(m_MQ4Sensor.readAnalogValue()));
-                    // oneClient->publish(std::string(bathRoomInfoData)+"mq4Digital", std::to_string(mq4SensorValueDigital));
+//             // update Nymea(broker) if connected
+//             if(m_brokerStatus)
+//             {
+//                 for(auto&& oneClient : m_mqttClients)
+//                 {
+//                     oneClient->publish(std::string(officeInfoData)+"hazeredGasState", std::string("0"));
+//                     oneClient->publish(std::string(officeInfoData)+"mq4Analog", std::to_string(m_MQ4Sensor.readAnalogValue()));
+//                     // oneClient->publish(std::string(officeInfoData)+"mq4Digital", std::to_string(mq4SensorValueDigital));
 
-                    oneClient->publish(std::string(bathRoomInfoData)+"mq2Analog", std::to_string(m_MQ2Sensor.readAnalogValue()));
-                    // oneClient->publish(std::string(bathRoomInfoData)+"mq2Digital", std::to_string(mq2SensorValueDigital));
-                }
-            }
-        }
-    }
-    else
-    {
-        return;
-    }
-}
+//                     oneClient->publish(std::string(officeInfoData)+"mq2Analog", std::to_string(m_MQ2Sensor.readAnalogValue()));
+//                     // oneClient->publish(std::string(officeInfoData)+"mq2Digital", std::to_string(mq2SensorValueDigital));
+//                 }
+//             }
+//         }
+//     }
+//     else
+//     {
+//         return;
+//     }
+// }
 
 void Application::checkForConfigUpdate(const std::string& command, const std::string& message)
 {
@@ -385,7 +382,6 @@ void Application::checkForConfigUpdate(const std::string& command, const std::st
     {
         bool enable = std::stoi(message);
         Serial.printf("update motion sensor enable command with data: %s\n", message.c_str());
-        m_RCWLSensor.changeLightEnable(enable);
         g_persistantData.MotionEnable = enable;
         writeToEEPROM(PESISTANTEEPROMIDX, g_persistantData);
     }
@@ -403,7 +399,6 @@ void Application::checkForConfigUpdate(const std::string& command, const std::st
         Serial.printf("update the motion sensor turn on time command received with data: %d\n",
                          g_persistantData.motionSensorLightActiveTime);
 
-        m_RCWLSensor.changeMotionSensorLightActiveTime(g_persistantData.motionSensorLightActiveTime);
         writeToEEPROM(PESISTANTEEPROMIDX, g_persistantData);
     }
 
@@ -411,7 +406,6 @@ void Application::checkForConfigUpdate(const std::string& command, const std::st
 
 void Application::checkMothion()
 {
-    m_RCWLSensor.controlLight(m_mqttClients);
 }
 
 template<typename T>

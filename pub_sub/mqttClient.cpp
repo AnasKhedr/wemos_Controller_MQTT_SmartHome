@@ -23,7 +23,7 @@ namespace mqtt
         m_pubSubClient(ip.c_str(), MQTTPORT, callback, m_wifiClient), m_brokerIp(ip), isBrokerInitialized(false)
         ,m_subscriptionTopic(subscriptionTopic)
         ,m_lastReconnectAttempt(0)
-        ,m_clientId("ESP8266Client-BathRoom")
+        ,m_clientId("ESP8266Client-Office")
     {
         // m_pubSubClient.setBufferSize(512);
         // m_pubSubClient.setKeepAlive(180);
@@ -42,9 +42,9 @@ namespace mqtt
     bool mqttClient::init()
     {
         m_pubSubClient.setBufferSize(512);
-        m_pubSubClient.setKeepAlive(180);
+        m_pubSubClient.setKeepAlive(10);
         //generate random clientID string
-        String clientId = "ESP8266Client-BathRoom";
+        String clientId = "ESP8266Client-Office";
         // clientId += String(random(0xffff), HEX);
 
         Serial.print("[mqttClient] client ID: ");
@@ -53,14 +53,14 @@ namespace mqtt
 
         if (!m_pubSubClient.connected())
         {
-            Serial.printf("[mqttClient] Connecting to MQTT broker: %s on port: %d\n", m_brokerIp.c_str(), MQTTPORT);
+            Serial.printf("[mqttClient no connected] Connecting to MQTT broker: %s on port: %d\n", m_brokerIp.c_str(), MQTTPORT);
 
             yield();
             if (m_pubSubClient.connect(clientId.c_str()))
             {
                 yield();
                 Serial.printf("connected to %s, subscribing.\n", clientId.c_str());
-                m_pubSubClient.publish("/home/bathroom/", "connected");
+                m_pubSubClient.publish("/home/office/", "connected");
                 // if(m_pubSubClient.subscribe("#"))
                 if(m_pubSubClient.subscribe(m_subscriptionTopic.c_str()))
                 {
@@ -106,6 +106,7 @@ namespace mqtt
             // if 2 seconds have passed since the last attempt
             if ((now - m_lastReconnectAttempt) > 2000)
             {
+                Serial.println("Attempting to reconnect to broker.");
                 numberOfRetries++;
                 m_lastReconnectAttempt = now;
                 // Attempt to reconnect
