@@ -139,7 +139,7 @@ class Application : public IObserver
         WiFiManager m_wifiManager;
 
         // source: https://chewett.co.uk/blog/1405/using-the-dht11-temperature-sensor-with-a-wemos-d1-mini-esp8266/
-        DHTesp m_dhtSensor;
+        // DHTesp m_dhtSensor;
 
         float m_humidity;
         float m_temperature;
@@ -163,7 +163,7 @@ class Application : public IObserver
         // gasSensor m_MQ2Sensor;
 
         // map must use with ptr https://stackoverflow.com/a/2281473/6184259
-        std::map<std::string, std::shared_ptr<office::officeGPIO>> m_ControlGPIOsList;
+        std::map<std::string, std::shared_ptr<reception::receptionGPIO>> m_ControlGPIOsList;
 };
 
 }       //namespace app

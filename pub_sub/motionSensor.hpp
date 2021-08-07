@@ -32,7 +32,7 @@ class RCLWSensor// : public ISimpleSensor
 
         void controlLight(std::vector<std::shared_ptr<mqtt::mqttClient>>& mqttClients);
 
-        void setRelayControllerObject(std::shared_ptr<office::officeGPIO>& object);
+        void setRelayControllerObject(std::shared_ptr<reception::receptionGPIO>& object);
         // Data members
 
     private:
@@ -49,7 +49,7 @@ class RCLWSensor// : public ISimpleSensor
 
         unsigned long m_motionSensorLightActiveTime;
 
-        std::shared_ptr<office::officeGPIO> m_lightControlPin;
+        std::shared_ptr<reception::receptionGPIO> m_lightControlPin;
 };
 
 

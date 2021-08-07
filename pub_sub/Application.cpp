@@ -30,7 +30,7 @@ Application::Application() :
     // m_MQ4Sensor(std::nullopt, m_ads, ADSA1, INPUT),
     // m_MQ2Sensor(std::nullopt, m_ads, ADSA2, INPUT)
 {
-    m_wifiManager.setSTAStaticIPConfig(IPAddress(192,168,1,98), IPAddress(192,168,1,1), IPAddress(255,255,255,0)); // optional DNS 4th argument
+    m_wifiManager.setSTAStaticIPConfig(DEVICEIP, IPAddress(192,168,1,1), IPAddress(255,255,255,0)); // optional DNS 4th argument
     m_wifiManager.setWiFiAutoReconnect(true);
     m_wifiManager.setShowInfoErase(true);
 
@@ -48,12 +48,9 @@ Application::Application() :
 
     //factory
     ///TODO: something is fishy about the creation of those objects, check is
-    m_ControlGPIOsList["mainLight"] = std::make_shared<office::officeGPIO>(MAINLIGHTPIN, office::GPIOtype::activeLow,"mainLight",MAINLIGHTBUTTONPIN);
-    m_ControlGPIOsList["neerLight"] = std::make_shared<office::officeGPIO>(NEERLIGHTPIN, office::GPIOtype::activeLow,"neerLight",NEERLIGHTBUTTONPIN);
-    m_ControlGPIOsList["farLight"] = std::make_shared<office::officeGPIO>(FARLIGHTPIN, office::GPIOtype::activeLow,"farLight",FARBUTTONPIN);
-    m_ControlGPIOsList["doorLight"] = std::make_shared<office::officeGPIO>(DOORLIGHTPIN, office::GPIOtype::activeLow,"doorLight", DOORBUTTONPIN);
-    m_ControlGPIOsList["ableekLight"] = std::make_shared<office::officeGPIO>(ABLEEKLIGHTPIN, office::GPIOtype::activeLow,"ableekLight", ABLEEKBUTTONPIN);
-
+    m_ControlGPIOsList["balconyNeerLight"] = std::make_shared<reception::receptionGPIO>(BALCONYNEERLIGHTPIN, reception::GPIOtype::activeLow,"balconyNeerLight",BALCONYNEERBUTTONPIN);
+    m_ControlGPIOsList["balconyFarLight"] = std::make_shared<reception::receptionGPIO>(BALCONYFARLIGHTPIN, reception::GPIOtype::activeLow,"balconyFarLight",BALCONYFARBUTTONPIN);
+    m_ControlGPIOsList["switch"] = std::make_shared<reception::receptionGPIO>(SWITCHPIN, reception::GPIOtype::activeLow,"switch");
 
 }
 
@@ -79,20 +76,20 @@ void Application::init()
     m_wifiManager.setConfigPortalBlocking(false);
     m_wifiManager.setWiFiAutoReconnect(true);
     m_wifiManager.autoConnect();
-    m_wifiManager.setConnectTimeout(300);
-    m_wifiManager.setSaveConnectTimeout(300);
+    m_wifiManager.setConnectTimeout(300);           // how much time to wait in AP mode before returning to try connecting to saved wifi
+    m_wifiManager.setSaveConnectTimeout(300);       // I think it's how much time to keep trying to search for and connect to saved wifis
 
-    Serial.println("initializing DHT11 and ADS1115 Sensors");
-    m_dhtSensor.setup(DHT11PIN, DHTesp::DHT11);
+    // Serial.println("initializing DHT11 and ADS1115 Sensors");
+    // m_dhtSensor.setup(DHT11PIN, DHTesp::DHT11);
     // m_ads.begin();
-    Serial.println("done initializing dht11 and ADS1115.");
+    // Serial.println("done initializing dht11 and ADS1115.");
 
     // creating clients to all the different brokerIps
     for(auto& oneIp : m_brokerIps)
     {
         Serial.printf("creating a new client to broker: %s\n", oneIp.c_str());
         // subscribe to the commands that we should act on only
-        m_mqttClients.push_back(std::make_shared<mqtt::mqttClient>(oneIp, std::string{officeInputCommands}+"#",
+        m_mqttClients.push_back(std::make_shared<mqtt::mqttClient>(oneIp, std::string{receptionInputCommands}+"#",
             [this](char *topic, uint8_t *payload, unsigned int length) -> void
             {
                 std::string message(reinterpret_cast<char*>(payload), length);
@@ -122,13 +119,8 @@ void Application::init()
             //delay the 2 seconds in a semi-blocking way
             for(uint8_t i=0; i<200; i++)
             {
-                for(auto it = m_ControlGPIOsList.begin(); it != m_ControlGPIOsList.end(); it++)
-                {
-                    // send empty vector since the mqtt broker is not yet initialized and I don't
-                    // want the library to misbehave and crash the application.
-                    // checking if any GPIO button was pushed.
-                    it->second->checkButton();
-                }
+                run();
+
                 yield();
                 delay(10);
             }
@@ -149,7 +141,7 @@ void Application::onMqttMessage(const std::string& topic, const std::string& mes
     Serial.printf("room: %s, device: %s, and message: %s\n", room.c_str(), device.c_str(), message.c_str());
 
     //if the received topic is for office
-    if(room.compare(officeInputCommands) == 0)
+    if(room.compare(receptionInputCommands) == 0)
     {
         if(m_ControlGPIOsList.find(device) == m_ControlGPIOsList.end())
         {
@@ -175,34 +167,19 @@ void Application::run()
     m_timerTasks.tick();
     m_wifiManager.process();
 
-    // checkHazeredSensors();
-
-    if(m_brokerStatus)
+    // checking messages form all brokers
+    for(auto&& oneClient : m_mqttClients)
     {
-        // checking messages form all brokers
-        for(auto&& oneClient : m_mqttClients)
-        {
-            oneClient->loop();
-            // Serial.println("publishing.");
-            // oneClient->publish("Test",std::to_string(x).c_str());
-        }
-
-        ///TODO: refactor this --> task
-        // checking if any GPIO button was pushed.
-        for(auto it = m_ControlGPIOsList.begin(); it != m_ControlGPIOsList.end(); it++)
-        {
-            it->second->checkButton(m_mqttClients);
-        }
-
-        updateSensorsReadings();
-        checkMothion();
+        m_brokerStatus |= oneClient->loop();
+        // Serial.println("publishing.");
+        // oneClient->publish("Test",std::to_string(x).c_str());
     }
-    else
+
+    ///TODO: refactor this --> task
+    // checking if any GPIO button was pushed.
+    for(auto it = m_ControlGPIOsList.begin(); it != m_ControlGPIOsList.end(); it++)
     {
-        for(auto it = m_ControlGPIOsList.begin(); it != m_ControlGPIOsList.end(); it++)
-        {
-            it->second->checkButton();
-        }
+        it->second->checkButton(m_mqttClients);
     }
 
 }
@@ -217,84 +194,84 @@ void Application::splitRoomAndSensor(const std::string fullTopic, std::string& r
     device = fullTopic.substr(found+1);     // from just after the last / found to the end
 }
 
-void Application::updateSensorsReadings()
-{
-    ///TODO: refactor this --> task
-    // send temp and humi every 10 seconds
-    if((millis() - m_lastSentTime) > g_persistantData.sensorsReadingsUpdateInterval)
-    {
-        // if(!m_brokerStatus)
-        // {
-        //     Serial.printf("(sensorsReadingsUpdateInterval) %dms have passed, but Working in offline mode, skipping updateing sensors State.\n",
-        //                 g_persistantData.sensorsReadingsUpdateInterval);
-        //     return;
-        // }
+// void Application::updateSensorsReadings()
+// {
+//     ///TODO: refactor this --> task
+//     // send temp and humi every 10 seconds
+//     if((millis() - m_lastSentTime) > g_persistantData.sensorsReadingsUpdateInterval)
+//     {
+//         // if(!m_brokerStatus)
+//         // {
+//         //     Serial.printf("(sensorsReadingsUpdateInterval) %dms have passed, but Working in offline mode, skipping updateing sensors State.\n",
+//         //                 g_persistantData.sensorsReadingsUpdateInterval);
+//         //     return;
+//         // }
 
-        debugV("* This is a message of debug level VERBOSE");
-        Serial.printf("(sensorsReadingsUpdateInterval) %dms have passed, sending readings.\n",
-                        g_persistantData.sensorsReadingsUpdateInterval);
-        Debug.printf("(sensorsReadingsUpdateInterval) %dms have passed, sending readings.\n",
-                        g_persistantData.sensorsReadingsUpdateInterval);
-        // updateing the time.
-        m_lastSentTime = millis();
+//         debugV("* This is a message of debug level VERBOSE");
+//         Serial.printf("(sensorsReadingsUpdateInterval) %dms have passed, sending readings.\n",
+//                         g_persistantData.sensorsReadingsUpdateInterval);
+//         Debug.printf("(sensorsReadingsUpdateInterval) %dms have passed, sending readings.\n",
+//                         g_persistantData.sensorsReadingsUpdateInterval);
+//         // updateing the time.
+//         m_lastSentTime = millis();
 
-        uint8_t counter = 0;
+//         uint8_t counter = 0;
 
-        do
-        {
-            counter++;
-            m_temperature = m_dhtSensor.getTemperature();
-            // Serial.printf("Reading humidity\n");
-            delay(1);
-        }
-        while((m_temperature == NAN) && (counter < 250));
+//         do
+//         {
+//             counter++;
+//             m_temperature = m_dhtSensor.getTemperature();
+//             // Serial.printf("Reading humidity\n");
+//             delay(1);
+//         }
+//         while((m_temperature == NAN) && (counter < 250));
 
-        m_humidity = m_dhtSensor.getHumidity();
-        Serial.printf("Interval have passed or #retries: %d, updateing Temperature: %f C and Humidity: %f%% ",
-                            counter, m_temperature, m_humidity);
-        // Serial.printf("mq4Analog: %f, mq2Analog: %f\n", m_MQ4Sensor.readAnalogValue(), m_MQ2Sensor.readAnalogValue());
-        Debug.printf("Interval have passed or #retries: %d, updateing Temperature: %f C and Humidity: %f%%\n",
-                            counter, m_temperature, m_humidity);
-        debugA("Sending reading to broker\n");
+//         m_humidity = m_dhtSensor.getHumidity();
+//         Serial.printf("Interval have passed or #retries: %d, updateing Temperature: %f C and Humidity: %f%% ",
+//                             counter, m_temperature, m_humidity);
+//         // Serial.printf("mq4Analog: %f, mq2Analog: %f\n", m_MQ4Sensor.readAnalogValue(), m_MQ2Sensor.readAnalogValue());
+//         Debug.printf("Interval have passed or #retries: %d, updateing Temperature: %f C and Humidity: %f%%\n",
+//                             counter, m_temperature, m_humidity);
+//         debugA("Sending reading to broker\n");
 
-        if(m_temperature == NAN)
-        {
-            Serial.println("Failed to get DHT11 reading, skipping updateing.");
-        }
-        else
-        {
-            m_temperature = helper::converTempToNymea(m_temperature);
-        }
+//         if(m_temperature == NAN)
+//         {
+//             Serial.println("Failed to get DHT11 reading, skipping updateing.");
+//         }
+//         else
+//         {
+//             m_temperature = helper::converTempToNymea(m_temperature);
+//         }
 
-                // Serial.println("y");
-        for(auto&& oneClient : m_mqttClients)
-        {
-                // Serial.println("x");
-            if((m_temperature != NAN))
-            {
-                Serial.println("Sending readings to Nymea.");
-                debugA("Sending readings to Nymea.\n");
-                Debug.print("Sending readings to Nymea 2\n");
+//                 // Serial.println("y");
+//         for(auto&& oneClient : m_mqttClients)
+//         {
+//                 // Serial.println("x");
+//             if((m_temperature != NAN))
+//             {
+//                 Serial.println("Sending readings to Nymea.");
+//                 debugA("Sending readings to Nymea.\n");
+//                 Debug.print("Sending readings to Nymea 2\n");
 
-                //DHT11 readings
-                oneClient->publish(std::string(officeInfoData)+"temperature", std::to_string(m_temperature));
-                oneClient->publish(std::string(officeInfoData)+"humidity", std::to_string(m_humidity));
+//                 //DHT11 readings
+//                 oneClient->publish(std::string(officeInfoData)+"temperature", std::to_string(m_temperature));
+//                 oneClient->publish(std::string(officeInfoData)+"humidity", std::to_string(m_humidity));
 
-                //MQ4 readings
-                // oneClient->publish(std::string(officeInfoData)+"mq4Analog", std::to_string(m_MQ4Sensor.readAnalogValue()));
-                // // oneClient->publish(std::string(officeInfoData)+"mq4Digital", std::to_string(m_MQ4Sensor.readDigitalValue()));
+//                 //MQ4 readings
+//                 // oneClient->publish(std::string(officeInfoData)+"mq4Analog", std::to_string(m_MQ4Sensor.readAnalogValue()));
+//                 // // oneClient->publish(std::string(officeInfoData)+"mq4Digital", std::to_string(m_MQ4Sensor.readDigitalValue()));
 
-                //MQ2 readings
-                // oneClient->publish(std::string(officeInfoData)+"mq2Analog", std::to_string(m_MQ2Sensor.readAnalogValue()));
-                // // oneClient->publish(std::string(officeInfoData)+"mq2Digital", std::to_string(mq2SensorValueDigital));
-            }
-            else
-            {
-                Serial.println("Failed to get DHT11 readings after 250 retries!");
-            }
-        }
-    }
-}
+//                 //MQ2 readings
+//                 // oneClient->publish(std::string(officeInfoData)+"mq2Analog", std::to_string(m_MQ2Sensor.readAnalogValue()));
+//                 // // oneClient->publish(std::string(officeInfoData)+"mq2Digital", std::to_string(mq2SensorValueDigital));
+//             }
+//             else
+//             {
+//                 Serial.println("Failed to get DHT11 readings after 250 retries!");
+//             }
+//         }
+//     }
+// }
 
 // void Application::checkHazeredSensors()
 // {

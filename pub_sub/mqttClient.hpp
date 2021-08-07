@@ -54,10 +54,39 @@ namespace mqtt
             template<class T>
             void publish(const std::string& Topic, const T& payload);
 
-            void loop();
+            //---------------------------------------------------------------------------
+            //! \brief 
+            //! 
+            //! \return true
+            //! \return false
+            //!
+            bool loop();
+
+            //---------------------------------------------------------------------------
+            //! \brief 
+            //! 
+            //! \return true
+            //! \return false
+            //!
             bool init();
+
+            //---------------------------------------------------------------------------
+            //! \brief 
+            //! 
+            //! \param topic
+            //! \param payload
+            //!
             void publishState(const std::string& topic, const std::string& payload);
+
+            //---------------------------------------------------------------------------
+            //! \brief 
+            //! 
+            //! \param topic
+            //! \param action
+            //!
             void publishState(const std::string& topic, const helper::actions& action);
+
+            bool reconnect();
 
             PubSubClient& getClient();
 

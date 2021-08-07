@@ -18,18 +18,15 @@
 #define MQTTPORT 1883
 ///TODO: D3(GPIO0 pull up by a resistor), D4, D8 --> make them as an output pins to not messup bootmode.
 // relay pins
-#define MAINLIGHTPIN D0
-#define NEERLIGHTPIN D1
-#define FARLIGHTPIN D2
-#define DOORLIGHTPIN D3
-#define ABLEEKLIGHTPIN D4
+#define BALCONYNEERLIGHTPIN D0
+#define BALCONYFARLIGHTPIN D1
+#define SWITCHPIN D2
+
 
 // buttons pins
-#define MAINLIGHTBUTTONPIN D5
-#define NEERLIGHTBUTTONPIN D6
-#define FARBUTTONPIN D7
-#define DOORBUTTONPIN 1     // GPIO1 - Tx
-#define ABLEEKBUTTONPIN 3   // GPIO3 - Rx
+#define BALCONYNEERBUTTONPIN D5
+#define BALCONYFARBUTTONPIN D6
+
 
 // sensors pins
 #define DHT11PIN 10      // SD3     --> if used D2, then the program will crash
@@ -43,7 +40,8 @@ constexpr float bitToVolt = (0.1875F/1000);
 #define EEPROMSIZE  20
 #define TESTBROKER "192.168.1.80"
 #define PI_4_1 "192.168.1.100"
-#define PI_4_2_kitchen "192.168.1.103"
+#define PI_4_reception "192.168.1.101"
+#define DEVICEIP IPAddress(192,168,1,97)
 
 #define PESISTANTEEPROMIDX 0
 
@@ -51,8 +49,11 @@ constexpr float bitToVolt = (0.1875F/1000);
 #define ONESECOND 1000
 #define BUTTONDEBOUNCINGDELAY_MS 100
 
-#define MQTTLOOPERCONNECTRETRIES 15
+#define MQTTLOOPERCONNECTRETRIES 30
 #define MQTTINITCONNECTRETRIES   5
+#define MQTTRECONNECTIONINTERVALS 5000  //5 seconds
+
+#define CLIENTID "ESP8266Client-reception"
 
 //---------------------------------------------------------------------------
 //! \brief 
@@ -68,13 +69,13 @@ constexpr auto kitchenGeneralTopic("/home/Room/kitchen/");
 //! \brief This topic will be used by the rest of the house(nymea) to
 //! configure options in the device and how it behaves.
 //!
-constexpr auto officeInputCommands("/home/Room/office/command/");
+constexpr auto receptionInputCommands("/home/Room/reception/command/");
 
 //---------------------------------------------------------------------------
 //! \brief This topic will be used by the bathroom controller to send
 //! and update its data\sensors to the rest of the house
 //!
-constexpr auto officeInfoData("/home/Room/office/info/");
+constexpr auto receptionInfoData("/home/Room/reception/info/");
 
 struct persistantData
 {

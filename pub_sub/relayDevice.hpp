@@ -26,7 +26,7 @@
 //! \brief
 //! @note       : Used Design Patterns:
 //!             1- tell don't ask
-namespace office
+namespace reception
 {
     //---------------------------------------------------------------------------
     //! \brief
@@ -38,7 +38,7 @@ namespace office
         NONE                //! <   if the device is no applicable for control (sensor)
     };
 
-    class officeGPIO  : public ISimpleDevice
+    class receptionGPIO  : public ISimpleDevice
     {
 
     public:
@@ -51,7 +51,7 @@ namespace office
         //! \param internalResistor
         //! \todo deprecate \p type
         //!
-        officeGPIO(const uint8_t controlPin,
+        receptionGPIO(const uint8_t controlPin,
                     const GPIOtype type,
                     const std::string topic = "NULL",
                     const std::optional<uint8_t> toggelButton = std::nullopt,
@@ -61,7 +61,7 @@ namespace office
         //! \brief Destroy the bath Room G P I O object
         //! 
         //!
-        ~officeGPIO() = default;
+        ~receptionGPIO() = default;
 
         //---------------------------------------------------------------------------
         //! \brief turn on device functionality implementation
@@ -136,5 +136,5 @@ namespace office
         unsigned long m_lastDebounceTime;
     };
 
-} // namespace office
+} // namespace reception
 #endif  //_RELAY_HPP

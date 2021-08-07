@@ -18,9 +18,9 @@ app::Application myApp;
 void setup()
 {
     // myApp.addClient(TESTBROKER);
-    myApp.addClient(PI_4_2_kitchen);
-    // myApp.addClient("192.168.0.100");
-    // myApp.addClient(PI_4_2_kitchen);
+    myApp.addClient(PI_4_reception);
+    // myApp.addClient("192.168.1.100");
+    // myApp.addClient("192.168.1.103");
     myApp.init();
 
     Debug.begin("RemoteDebug");

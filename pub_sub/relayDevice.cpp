@@ -41,10 +41,10 @@ static std::vector<uint8_t> validPins{D0,D1,D2,D3,D4,D5,D6,D7,D8,D9,D10};
 //---------------------------------------------------------------------------
 // Functions
 //---------------------------------------------------------------------------
-namespace office
+namespace reception
 {
 
-    officeGPIO::officeGPIO(const uint8_t controlPin, const GPIOtype type, const std::string handle, const std::optional<uint8_t> toggelButton, const uint8_t internalResistor) :
+    receptionGPIO::receptionGPIO(const uint8_t controlPin, const GPIOtype type, const std::string handle, const std::optional<uint8_t> toggelButton, const uint8_t internalResistor) :
         m_controlPin(controlPin),
         m_toggelButton(toggelButton),
         m_type(type),
@@ -68,7 +68,7 @@ namespace office
             return;
         }
 
-        Serial.println("start of officeGPIO constructor  ********************");
+        Serial.println("start of receptionGPIO constructor  ********************");
         Serial.printf("gpio pin: %d, m_type: %d, handle: %s\n",controlPin,bool(type),handle.c_str());
 
 
@@ -92,10 +92,10 @@ namespace office
         //     return true;
         // });
 
-        Serial.println("end of officeGPIO constructor ===================");
+        Serial.println("end of receptionGPIO constructor ===================");
     }
 
-    bool officeGPIO::canUsePin(const uint8_t& newPin) const
+    bool receptionGPIO::canUsePin(const uint8_t& newPin) const
     {
         // make sure that the pin is not already used by another object
         for(auto pin : alreadyUsedGPIOs)
@@ -125,7 +125,7 @@ namespace office
         return false;
     }
 
-    void officeGPIO::switchOn()
+    void receptionGPIO::switchOn()
     {
         // my devices are active low
         if(m_type == GPIOtype::activeLow)
@@ -141,7 +141,7 @@ namespace office
         digitalWrite(m_controlPin, m_currentState);
     }
 
-    void officeGPIO::switchOff()
+    void receptionGPIO::switchOff()
     {
         if(m_type == GPIOtype::activeLow)
         {
@@ -156,7 +156,7 @@ namespace office
         digitalWrite(m_controlPin, m_currentState);
     }
 
-    void officeGPIO::toggel()
+    void receptionGPIO::toggel()
     {
         Serial.printf("Toggeling pin %d[%s] from state %d to %d\n",
                         m_controlPin, m_handle.c_str(), m_currentState, !m_currentState);
@@ -166,7 +166,7 @@ namespace office
         digitalWrite(m_controlPin, m_currentState);
     }
 
-    void officeGPIO::act(const helper::actions& action)
+    void receptionGPIO::act(const helper::actions& action)
     {
         switch (action)
         {
@@ -186,7 +186,7 @@ namespace office
         }
     }
 
-    void officeGPIO::checkButton(const std::vector<std::shared_ptr<mqtt::mqttClient>>& mqttClients)
+    void receptionGPIO::checkButton(const std::vector<std::shared_ptr<mqtt::mqttClient>>& mqttClients)
     {
         // if this GPIO device is was not set for a toggle pin.
         if(!m_toggelButton)
@@ -212,7 +212,7 @@ namespace office
 
                 for(auto& oneClient : mqttClients)
                 {
-                    oneClient->publishState(officeInfoData+m_handle, helper::actions::TOGGEL);
+                    oneClient->publishState(receptionInfoData+m_handle, helper::actions::TOGGEL);
                 }
             }
 
@@ -224,12 +224,12 @@ namespace office
         }
     }
 
-    void officeGPIO::checkButton()
+    void receptionGPIO::checkButton()
     {
         checkButton(std::vector<std::shared_ptr<mqtt::mqttClient>>{});
     }
 
-    helper::state officeGPIO::whatIsDeviceState() const
+    helper::state receptionGPIO::whatIsDeviceState() const
     {
         if(m_type == GPIOtype::activeLow)
         {
