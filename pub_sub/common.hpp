@@ -15,7 +15,6 @@
 //---------------------------------------------------------------------------
 
 
-#define MQTTPORT 1883
 ///TODO: D3(GPIO0 pull up by a resistor), D4, D8 --> make them as an output pins to not messup bootmode.
 // relay pins
 #define MAINLIGHTPIN D0
@@ -44,6 +43,9 @@ constexpr float bitToVolt = (0.1875F/1000);
 #define TESTBROKER "192.168.1.80"
 #define PI_4_1 "192.168.1.100"
 #define PI_4_2_kitchen "192.168.1.103"
+#define PI_3_reception "192.168.1.101"
+#define MQTTPORT 1883
+#define DEVICEIP IPAddress(192,168,1,98)
 
 #define PESISTANTEEPROMIDX 0
 
@@ -51,8 +53,11 @@ constexpr float bitToVolt = (0.1875F/1000);
 #define ONESECOND 1000
 #define BUTTONDEBOUNCINGDELAY_MS 100
 
-#define MQTTLOOPERCONNECTRETRIES 15
+#define MQTTLOOPERCONNECTRETRIES 30
 #define MQTTINITCONNECTRETRIES   5
+#define MQTTRECONNECTIONINTERVALS 5000  //5 seconds
+
+#define CLIENTID "ESP8266Client-Office"
 
 //---------------------------------------------------------------------------
 //! \brief 

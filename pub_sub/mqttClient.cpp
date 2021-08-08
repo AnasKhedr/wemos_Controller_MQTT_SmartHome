@@ -23,7 +23,6 @@ namespace mqtt
         m_pubSubClient(ip.c_str(), MQTTPORT, callback, m_wifiClient), m_brokerIp(ip), isBrokerInitialized(false)
         ,m_subscriptionTopic(subscriptionTopic)
         ,m_lastReconnectAttempt(0)
-        ,m_clientId("ESP8266Client-Office")
     {
         // m_pubSubClient.setBufferSize(512);
         // m_pubSubClient.setKeepAlive(180);
@@ -41,10 +40,15 @@ namespace mqtt
 
     bool mqttClient::init()
     {
-        m_pubSubClient.setBufferSize(512);
-        m_pubSubClient.setKeepAlive(10);
-        //generate random clientID string
-        String clientId = "ESP8266Client-Office";
+        // m_pubSubClient.setBufferSize(512);
+        // m_pubSubClient.setKeepAlive(5);
+
+        // if I don't set server again manually then the reconnection won't work.
+        m_pubSubClient.setServer(m_brokerIp.c_str(), MQTTPORT);
+        // m_pubSubClient.setCallback(callback);
+
+        //get the clientID string
+        String clientId = CLIENTID;
         // clientId += String(random(0xffff), HEX);
 
         Serial.print("[mqttClient] client ID: ");
@@ -94,8 +98,11 @@ namespace mqtt
         return false;
     }
 
-    void mqttClient::loop()
+    bool mqttClient::loop()
     {
+        bool returnValue = false;
+        m_pubSubClient.loop();
+
         // if the ESP was disconnected, then attempt to reconnect.
         if (!m_pubSubClient.connected())
         {
@@ -103,21 +110,23 @@ namespace mqtt
             static uint8_t numberOfRetries = 0;
             unsigned long now = millis();
 
-            // if 2 seconds have passed since the last attempt
-            if ((now - m_lastReconnectAttempt) > 2000)
+            // if 5 seconds have passed since the last attempt
+            if ((now - m_lastReconnectAttempt) > MQTTRECONNECTIONINTERVALS)
             {
                 Serial.println("Attempting to reconnect to broker.");
                 numberOfRetries++;
                 m_lastReconnectAttempt = now;
                 // Attempt to reconnect
-                if (init())
+                if (reconnect())
                 {
+                    returnValue = true;
                     Serial.println("Reconnected successfully.");
                     m_lastReconnectAttempt = 0;
                     numberOfRetries = 0;
                 }
                 else
                 {
+                    returnValue = false;
                     if(numberOfRetries > MQTTLOOPERCONNECTRETRIES)
                     {
                         Serial.printf("Max retries: %d reached for reconnection with %s, resetting ....\n",
@@ -133,9 +142,12 @@ namespace mqtt
         }
         else
         {
+            returnValue = true;
             // Client is already connected
             m_pubSubClient.loop();
         }
+
+        return returnValue;
     }
 
     void mqttClient::publish(const std::string& Topic, const std::string& payload)
@@ -172,6 +184,17 @@ namespace mqtt
     {
         Serial.printf("Publishing state, topic: %s, payload: %d\n",topic.c_str() , static_cast<int>(action));
         m_pubSubClient.publish(topic.c_str(), std::to_string(static_cast<int>(action)).c_str());
+    }
+
+    bool mqttClient::reconnect()
+    {
+        if(m_pubSubClient.connect(CLIENTID))
+        {
+            m_pubSubClient.publish("/home/office","reconnected");
+            m_pubSubClient.subscribe("#");
+        }
+
+        return m_pubSubClient.connected();
     }
 
     void mqttCallback(char *topic, byte *payload, unsigned int length)
