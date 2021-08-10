@@ -15,19 +15,18 @@
 //---------------------------------------------------------------------------
 
 
-#define MQTTPORT 1883
 ///TODO: D3(GPIO0 pull up by a resistor), D4, D8 --> make them as an output pins to not messup bootmode.
 // relay pins
 #define MAINLIGHTPIN D6
 #define WASHBASINELIGHTPIN D7
 #define VENTILATORPIN D5
-#define BUZZERCONTROLPIN 3      // RX
+#define BUZZERCONTROLPIN D8
 #define RCWLPIN D0
 
 // buttons pins
 #define MAINLIGHTBUTTONPIN D3
 #define WASHBASINELIGHTBUTTONPIN D4
-#define VENTILATORBUTTONPIN D8
+#define VENTILATORBUTTONPIN 3       // Rx
 
 // sensors pins
 #define DHT11PIN 10      // SD3     --> if used D2, then the program will crash
@@ -40,18 +39,22 @@ constexpr float bitToVolt = (0.1875F/1000);
 
 #define EEPROMSIZE  20
 #define TESTBROKER "192.168.1.80"
-#define PI_4_1 "192.168.1.100"
+#define PI_4_1_bedroom "192.168.1.100"
 #define PI_4_2_kitchen "192.168.1.103"
-
+#define PI_3_reception "192.168.1.101"
+#define MQTTPORT 1883
+#define DEVICEIP IPAddress(192,168,1,99)
 #define PESISTANTEEPROMIDX 0
 
 
 #define ONESECOND 1000
-#define BUTTONDEBOUNCINGDELAY_MS 50
+#define BUTTONDEBOUNCINGDELAY_MS 100
 
-#define MQTTLOOPERCONNECTRETRIES 15
+#define MQTTLOOPERCONNECTRETRIES 360        // esp will keep trying to reconnect for 30mins before resting
+#define MQTTRECONNECTIONINTERVALS 10000     //10 seconds
 #define MQTTINITCONNECTRETRIES   5
 
+#define CLIENTID "ESP8266Client-Bathroom"
 //---------------------------------------------------------------------------
 //! \brief 
 //! \note   - auto will translate to char*

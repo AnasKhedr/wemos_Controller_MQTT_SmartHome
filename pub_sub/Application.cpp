@@ -82,8 +82,8 @@ void Application::init()
     m_wifiManager.setConfigPortalBlocking(false);
     m_wifiManager.setWiFiAutoReconnect(true);
     m_wifiManager.autoConnect();
-    m_wifiManager.setConnectTimeout(300);
-    m_wifiManager.setSaveConnectTimeout(300);
+    m_wifiManager.setConnectTimeout(300);           // how much time to wait in AP mode before returning to try connecting to saved wifi
+    m_wifiManager.setSaveConnectTimeout(300);       // I think it's how much time to keep trying to search for and connect to saved wifis
 
     Serial.println("initializing DHT11 and ADS1115 Sensors");
     m_dhtSensor.setup(DHT11PIN, DHTesp::DHT11);
@@ -111,10 +111,10 @@ void Application::init()
     // at least connect to one broker
     while(!m_brokerStatus && (counter < MQTTINITCONNECTRETRIES))
     {
+        Serial.println("start initializing m_mqttClients");
         counter++;
         for(auto& oneClient : m_mqttClients)
         {
-            Serial.println("start initializing over m_mqttClients");
             m_brokerStatus |= oneClient->init();
         }
 
@@ -125,16 +125,16 @@ void Application::init()
             //delay the 2 seconds in a semi-blocking way
             for(uint8_t i=0; i<200; i++)
             {
-                for(auto it = m_ControlGPIOsList.begin(); it != m_ControlGPIOsList.end(); it++)
-                {
-                    // send empty vector since the mqtt broker is not yet initialized and I don't
-                    // want the library to misbehave and crash the application.
-                    // checking if any GPIO button was pushed.
-                    it->second->checkButton();
-                }
+                run();
+
                 yield();
                 delay(10);
             }
+        }
+        else
+        {
+            Serial.println("Succeeded in connecting to one of the mqtt clients, Will try to connect to unconnected(if any) brokers during runtime.");
+            break;
         }
 
         if(counter >= MQTTINITCONNECTRETRIES)
@@ -179,33 +179,22 @@ void Application::run()
     m_wifiManager.process();
 
     checkHazeredSensors();
+    updateSensorsReadings();
+    checkMothion();
 
-    if(m_brokerStatus)
+    // checking messages form all brokers
+    for(auto&& oneClient : m_mqttClients)
     {
-        // checking messages form all brokers
-        for(auto&& oneClient : m_mqttClients)
-        {
-            oneClient->loop();
-            // Serial.println("publishing.");
-            // oneClient->publish("Test",std::to_string(x).c_str());
-        }
-
-        ///TODO: refactor this --> task
-        // checking if any GPIO button was pushed.
-        for(auto it = m_ControlGPIOsList.begin(); it != m_ControlGPIOsList.end(); it++)
-        {
-            it->second->checkButton(m_mqttClients);
-        }
-
-        updateSensorsReadings();
-        checkMothion();
+        m_brokerStatus |= oneClient->loop();
+        // Serial.println("publishing.");
+        // oneClient->publish("Test",std::to_string(x).c_str());
     }
-    else
+
+    ///TODO: refactor this --> task
+    // checking if any GPIO button was pushed.
+    for(auto it = m_ControlGPIOsList.begin(); it != m_ControlGPIOsList.end(); it++)
     {
-        for(auto it = m_ControlGPIOsList.begin(); it != m_ControlGPIOsList.end(); it++)
-        {
-            it->second->checkButton();
-        }
+        it->second->checkButton(m_mqttClients);
     }
 
 }
