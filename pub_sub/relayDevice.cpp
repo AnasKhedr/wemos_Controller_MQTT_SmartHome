@@ -212,7 +212,7 @@ namespace bathRoom
 
                 for(auto& oneClient : mqttClients)
                 {
-                    oneClient->publishState(bathRoomInfoData+m_handle, helper::actions::TOGGEL);
+                    oneClient->publishState(bathRoomInfoData+m_handle, m_currentState);
                 }
             }
 

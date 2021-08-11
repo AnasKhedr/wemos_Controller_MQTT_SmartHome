@@ -20,7 +20,16 @@
 //---------------------------------------------------------------------------
 // Functions
 //---------------------------------------------------------------------------
+void onWifiConnect(const WiFiEventStationModeGotIP& event) {
+    Serial.println("Connected to Wi-Fi.");
+    // connectToMqtt();
+}
 
+void onWifiDisconnect(const WiFiEventStationModeDisconnected& event) {
+    Serial.println("Disconnected from Wi-Fi.");
+    // mqttReconnectTimer.detach(); // ensure we don't reconnect to MQTT while reconnecting to Wi-Fi
+    // wifiReconnectTimer.once(2, connectToWifi);
+}
 namespace app
 {
 
@@ -66,6 +75,9 @@ void Application::addClient(std::string brokerIp)
 
 void Application::init()
 {
+    WiFi.onStationModeGotIP(onWifiConnect);
+    WiFi.onStationModeDisconnected(onWifiDisconnect);
+
     readFromEEPROM(PESISTANTEEPROMIDX, g_persistantData);
     m_RCWLSensor.changeLightEnable(g_persistantData.MotionEnable);
     m_RCWLSensor.changeMotionSensorLightActiveTime(g_persistantData.motionSensorLightActiveTime);
@@ -96,9 +108,9 @@ void Application::init()
         Serial.printf("creating a new client to broker: %s\n", oneIp.c_str());
         // subscribe to the commands that we should act on only
         m_mqttClients.push_back(std::make_shared<mqtt::mqttClient>(oneIp, std::string{bathRoomInputCommands}+"#",
-            [this](char *topic, uint8_t *payload, unsigned int length) -> void
+            [this](char *topic, char *payload, size_t length) -> void
             {
-                std::string message(reinterpret_cast<char*>(payload), length);
+                std::string message(payload, length);
                 helper::printMqttMessage(topic, message);
                 onMqttMessage(topic, message);
             }));

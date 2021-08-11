@@ -28,7 +28,9 @@
 #include "motionSensor.hpp"
 #include "common.hpp"
 
-
+#include <ESP8266WiFi.h>
+#include <Ticker.h>
+#include <AsyncMqttClient.h>
 
 //---------------------------------------------------------------------------
 // Functions
@@ -170,6 +172,10 @@ class Application : public IObserver
         //! 
         //!
         RCLWSensor m_RCWLSensor;
+
+
+        // void onWifiConnect(const WiFiEventStationModeGotIP& event);
+        // void onWifiDisconnect(const WiFiEventStationModeDisconnected& event);
 };
 
 }       //namespace app
