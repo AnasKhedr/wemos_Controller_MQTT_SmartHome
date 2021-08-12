@@ -40,7 +40,7 @@ Application::Application() :
     m_MQ2Sensor(std::nullopt, m_ads, ADSA2, INPUT),
     m_RCWLSensor(RCWLPIN)
 {
-    m_wifiManager.setSTAStaticIPConfig(IPAddress(192,168,1,99), IPAddress(192,168,1,1), IPAddress(255,255,255,0)); // optional DNS 4th argument
+    m_wifiManager.setSTAStaticIPConfig(DEVICEIP, IPAddress(192,168,1,1), IPAddress(255,255,255,0)); // optional DNS 4th argument
     m_wifiManager.setWiFiAutoReconnect(true);
     m_wifiManager.setShowInfoErase(true);
 

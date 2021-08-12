@@ -154,7 +154,7 @@ namespace mqtt
 
     void mqttClient::publish(const std::string& Topic, const std::string& payload)
     {
-        m_mqttClient.publish(Topic.c_str(), 0, false, payload.c_str());
+        m_mqttClient.publish(Topic.c_str(), 0, true, payload.c_str());
     }
 
     template<class T>
@@ -162,7 +162,7 @@ namespace mqtt
     {
         if(m_mqttClient.connected())
         {
-            publish(Topic, 0, false, std::to_string(payload));
+            publish(Topic, std::to_string(payload));
         }
         else
         {
@@ -180,7 +180,7 @@ namespace mqtt
         Serial.printf("Publishing state, topic: %s, payload: %s.\n",topic.c_str() , payload.c_str());
         if(m_mqttClient.connected())
         {
-            m_mqttClient.publish(topic.c_str(), 0, false, payload.c_str());
+            m_mqttClient.publish(topic.c_str(), 0, true, payload.c_str());
         }
         else
         {
@@ -193,7 +193,7 @@ namespace mqtt
         if(m_mqttClient.connected())
         {
             Serial.printf("Publishing state, topic: %s, payload: %d\n",topic.c_str() , state);
-            m_mqttClient.publish(topic.c_str(), 0, false, std::to_string(state).c_str());
+            m_mqttClient.publish(topic.c_str(), 0, true, std::to_string(state).c_str());
         }
         else
         {
@@ -225,7 +225,7 @@ namespace mqtt
         uint16_t packetIdSub = m_mqttClient.subscribe(m_subscriptionTopic.c_str(), 0);
         Serial.print("Subscribing at QoS 0, packetId: ");
         Serial.println(packetIdSub);
-        m_mqttClient.publish("/home/bathroom/", 0, true, "connected");
+        m_mqttClient.publish("/home/bathroom/", 0, false, "connected");
     }
 
     void mqttClient::onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total)

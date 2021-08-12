@@ -51,6 +51,7 @@ namespace bathRoom
         m_buttonDoAct(false)
         // m_handle(handle)     // m_handle is not a member, must be initialized in its own class
     {
+        Serial.println("start of officeGPIO constructor ===================");
         // initializing handler
         m_handle = handle;
         m_currentState = true;        // specific for my need, GPIO device is active low
@@ -59,7 +60,8 @@ namespace bathRoom
         if(canUsePin(controlPin))
         {
             //inserting GPIO into used list
-            alreadyUsedGPIOs.push_back(controlPin);
+            alreadyUsedGPIOs.push_back(m_controlPin);
+            pinMode(m_controlPin, OUTPUT);
         }
         else
         {
@@ -68,17 +70,22 @@ namespace bathRoom
             return;
         }
 
-        Serial.println("start of bathRoomGPIO constructor  ********************");
-        Serial.printf("gpio pin: %d, m_type: %d, handle: %s\n",controlPin,bool(type),handle.c_str());
+        Serial.printf("gpio pin: %d, m_type: %d, handle: %s\n", controlPin, bool(type),handle.c_str());
 
-
-        Serial.println("GPIOtype::activeLow -------------------");
-        pinMode(m_controlPin, OUTPUT);
         //default state for device is off
-        switchOff();
+        // switchOff();
         if(m_toggelButton)
         {
-            pinMode(m_toggelButton.value(), internalResistor);
+            if(canUsePin(m_toggelButton.value()))
+            {
+                alreadyUsedGPIOs.push_back(m_toggelButton.value());
+                Serial.printf("ToggelButton is set to pin: %d\n", m_toggelButton.value());
+                pinMode(m_toggelButton.value(), internalResistor);
+            }
+            else
+            {
+                Serial.println("Error[m_toggelButton], GPIO setup will not complete!!!");
+            }
         }
 
         // Application::m_timerTasks;
@@ -207,12 +214,20 @@ namespace bathRoom
             {
                 m_buttonDoAct = false;
 
-                Serial.printf("Button Pressed for %s, toggeling state.", m_handle.c_str());
+                Serial.printf("Button Pressed(GPIO%d) for %s, toggeling state.", m_toggelButton.value(), m_handle.c_str());
                 toggel();
 
                 for(auto& oneClient : mqttClients)
                 {
-                    oneClient->publishState(bathRoomInfoData+m_handle, m_currentState);
+                    if(bathRoom::GPIOtype::activeHigh == m_type)
+                    {
+                        oneClient->publishState(bathRoomInputCommands+m_handle, m_currentState);
+                    }
+                    else    //activeLow
+                    {
+                        // invert the state because 0 means on and 1 means off
+                        oneClient->publishState(bathRoomInputCommands+m_handle, !m_currentState);
+                    }
                 }
             }
 
