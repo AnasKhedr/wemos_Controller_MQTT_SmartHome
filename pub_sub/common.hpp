@@ -16,19 +16,21 @@
 
 
 ///TODO: D3(GPIO0 pull up by a resistor), D4, D8 --> make them as an output pins to not messup bootmode.
+// avoid using Tx (GPIO1) because it will mess up your serial.print()
+// avoid using D8 as an input, it simple doesn't work
 // relay pins
 #define MAINLIGHTPIN D0
 #define NEERLIGHTPIN D1
 #define FARLIGHTPIN D2
-#define DOORLIGHTPIN D3
-#define ABLEEKLIGHTPIN D4
+#define DOORLIGHTPIN 3      // GPIO3 -> Rx
+#define ABLEEKLIGHTPIN D8
 
 // buttons pins
 #define MAINLIGHTBUTTONPIN D5
 #define NEERLIGHTBUTTONPIN D6
 #define FARBUTTONPIN D7
-#define DOORBUTTONPIN 1     // GPIO1 - Tx
-#define ABLEEKBUTTONPIN 3   // GPIO3 - Rx
+#define DOORBUTTONPIN D4
+#define ABLEEKBUTTONPIN D3
 
 // sensors pins
 #define DHT11PIN 10      // SD3     --> if used D2, then the program will crash
@@ -53,9 +55,9 @@ constexpr float bitToVolt = (0.1875F/1000);
 #define ONESECOND 1000
 #define BUTTONDEBOUNCINGDELAY_MS 100
 
-#define MQTTLOOPERCONNECTRETRIES 30
+#define MQTTLOOPERCONNECTRETRIES 360        // esp will keep trying to reconnect for 30mins before resting
+#define MQTTRECONNECTIONINTERVALS 10000     //10 seconds
 #define MQTTINITCONNECTRETRIES   5
-#define MQTTRECONNECTIONINTERVALS 5000  //5 seconds
 
 #define CLIENTID "ESP8266Client-Office"
 

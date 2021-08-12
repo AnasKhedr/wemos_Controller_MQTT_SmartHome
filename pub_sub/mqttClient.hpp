@@ -15,11 +15,12 @@
 //---------------------------------------------------------------------------
 #include <Arduino.h>
 #include <string>
-#include <PubSubClient.h>
 #include <ESP8266WiFi.h> //https://github.com/esp8266/Arduino
 #include "helper.hpp"
 #include "ImqttObserver.hpp"
 #include "common.hpp"
+
+#include <AsyncMqttClient.h>    //  https://github.com/marvinroger/async-mqtt-client --> 89bf464
 
 
 
@@ -29,7 +30,7 @@
 
 namespace mqtt
 {
-    typedef std::function<void(char*, uint8_t*, unsigned int)> callbackType;
+    typedef std::function<void(char *topic, char *payload, size_t length)> callbackType;
 
     //---------------------------------------------------------------------------
     //! \brief default callback, has no use except for debugging
@@ -38,7 +39,7 @@ namespace mqtt
     //! \param payload
     //! \param length
     //!
-    void mqttCallback(char *topic, uint8_t *payload, unsigned int length);
+    void mqttCallback(char *topic, char *payload, size_t length);
 
     class mqttClient
     {
@@ -84,20 +85,26 @@ namespace mqtt
             //! \param topic
             //! \param action
             //!
-            void publishState(const std::string& topic, const helper::actions& action);
+            void publishState(const std::string& topic, const bool& state);
 
             bool reconnect();
 
-            PubSubClient& getClient();
+            AsyncMqttClient& getClient();
 
         private:
 
             // Data members
             WiFiClient m_wifiClient;
-            PubSubClient m_pubSubClient;
+
+            AsyncMqttClient m_mqttClient;
+
             std::string m_brokerIp;
             std::string m_subscriptionTopic;
             unsigned long m_lastReconnectAttempt;
+
+            bool m_isConnected;
+
+            callbackType m_callback;
 
             //---------------------------------------------------------------------------
             //! \brief a variable to be set only if the broker was initalized successfully.
@@ -105,6 +112,12 @@ namespace mqtt
             bool isBrokerInitialized;
 
             std::vector<IObserver> m_observersList;
+
+            void onMqttConnect(bool sessionPresent);
+
+            void onMqttDisconnect(AsyncMqttClientDisconnectReason reason);
+
+            void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total);
 
 
     };

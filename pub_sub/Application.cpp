@@ -50,9 +50,9 @@ Application::Application() :
     ///TODO: something is fishy about the creation of those objects, check is
     m_ControlGPIOsList["mainLight"] = std::make_shared<office::officeGPIO>(MAINLIGHTPIN, office::GPIOtype::activeLow,"mainLight",MAINLIGHTBUTTONPIN);
     m_ControlGPIOsList["neerLight"] = std::make_shared<office::officeGPIO>(NEERLIGHTPIN, office::GPIOtype::activeLow,"neerLight",NEERLIGHTBUTTONPIN);
-    m_ControlGPIOsList["farLight"] = std::make_shared<office::officeGPIO>(FARLIGHTPIN, office::GPIOtype::activeLow,"farLight",FARBUTTONPIN);
-    m_ControlGPIOsList["doorLight"] = std::make_shared<office::officeGPIO>(DOORLIGHTPIN, office::GPIOtype::activeLow,"doorLight", DOORBUTTONPIN);
+    m_ControlGPIOsList["farLight"] = std::make_shared<office::officeGPIO>(FARLIGHTPIN, office::GPIOtype::activeHigh,"farLight",FARBUTTONPIN);
     m_ControlGPIOsList["ableekLight"] = std::make_shared<office::officeGPIO>(ABLEEKLIGHTPIN, office::GPIOtype::activeLow,"ableekLight", ABLEEKBUTTONPIN);
+    m_ControlGPIOsList["doorLight"] = std::make_shared<office::officeGPIO>(DOORLIGHTPIN, office::GPIOtype::activeLow,"doorLight", DOORBUTTONPIN);
 
 
 }
@@ -75,10 +75,11 @@ void Application::init()
     Serial.println("connecting to WIFI network. Blocking execution until connected!");
     // m_wifiManager.autoConnect(m_wifiManager.getDefaultAPName().c_str(), "1234567809");
     Serial.println("connected to WIFI network.");
-    // m_wifiManager.setConfigPortalTimeout(120);
+    m_wifiManager.setConfigPortalTimeout(60);
     m_wifiManager.setConfigPortalBlocking(false);
     m_wifiManager.setWiFiAutoReconnect(true);
-    m_wifiManager.autoConnect();
+    m_wifiManager.autoConnect("Office-ESP");
+    m_wifiManager.setHostname("Office-ESP");
     m_wifiManager.setConnectTimeout(300);           // how much time to wait in AP mode before returning to try connecting to saved wifi
     m_wifiManager.setSaveConnectTimeout(300);       // I think it's how much time to keep trying to search for and connect to saved wifis
 
@@ -93,9 +94,9 @@ void Application::init()
         Serial.printf("creating a new client to broker: %s\n", oneIp.c_str());
         // subscribe to the commands that we should act on only
         m_mqttClients.push_back(std::make_shared<mqtt::mqttClient>(oneIp, std::string{officeInputCommands}+"#",
-            [this](char *topic, uint8_t *payload, unsigned int length) -> void
+            [this](char *topic, char *payload, size_t length) -> void
             {
-                std::string message(reinterpret_cast<char*>(payload), length);
+                std::string message(payload, length);
                 helper::printMqttMessage(topic, message);
                 onMqttMessage(topic, message);
             }));
@@ -108,10 +109,10 @@ void Application::init()
     // at least connect to one broker
     while(!m_brokerStatus && (counter < MQTTINITCONNECTRETRIES))
     {
+        Serial.println("start initializing m_mqttClients");
         counter++;
         for(auto& oneClient : m_mqttClients)
         {
-            Serial.println("start initializing over m_mqttClients");
             m_brokerStatus |= oneClient->init();
         }
 
@@ -127,6 +128,11 @@ void Application::init()
                 yield();
                 delay(10);
             }
+        }
+        else
+        {
+            Serial.println("Succeeded in connecting to one of the mqtt clients, Will try to connect to unconnected(if any) brokers during runtime.");
+            break;
         }
 
         if(counter >= MQTTINITCONNECTRETRIES)

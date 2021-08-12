@@ -29,6 +29,7 @@
 #include "common.hpp"
 
 
+#include <AsyncMqttClient.h>
 
 //---------------------------------------------------------------------------
 // Functions
