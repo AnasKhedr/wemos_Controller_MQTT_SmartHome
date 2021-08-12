@@ -90,10 +90,11 @@ void Application::init()
     Serial.println("connecting to WIFI network. Blocking execution until connected!");
     // m_wifiManager.autoConnect(m_wifiManager.getDefaultAPName().c_str(), "1234567809");
     Serial.println("connected to WIFI network.");
-    // m_wifiManager.setConfigPortalTimeout(120);
+    m_wifiManager.setConfigPortalTimeout(60);
     m_wifiManager.setConfigPortalBlocking(false);
     m_wifiManager.setWiFiAutoReconnect(true);
-    m_wifiManager.autoConnect();
+    m_wifiManager.autoConnect("Bathroom-ESP");
+    m_wifiManager.setHostname("Bathroom-ESP");
     m_wifiManager.setConnectTimeout(300);           // how much time to wait in AP mode before returning to try connecting to saved wifi
     m_wifiManager.setSaveConnectTimeout(300);       // I think it's how much time to keep trying to search for and connect to saved wifis
 
@@ -189,6 +190,23 @@ void Application::run()
     // Serial.println("run instance");
     m_timerTasks.tick();
     m_wifiManager.process();
+
+    // static unsigned long lastReadTimer = millis();
+    // // check reading every 1 second
+    // if((millis() - lastReadTimer) > (ONESECOND*30))
+    // {
+    //     lastReadTimer = millis();
+    //     if(!WiFi.isConnected())
+    //     {
+    //         Serial.println("manually trying autoconnect.........");
+    //         m_wifiManager.stopWebPortal();
+    //         m_wifiManager.autoConnect();
+    //     }
+    //     else
+    //     {
+    //         Serial.println("already connected");
+    //     }
+    // }
 
     checkHazeredSensors();
     updateSensorsReadings();

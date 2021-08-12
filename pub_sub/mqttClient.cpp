@@ -30,7 +30,7 @@ namespace mqtt
         m_mqttClient.onDisconnect([this](AsyncMqttClientDisconnectReason reason){onMqttDisconnect(reason);});
         m_mqttClient.onMessage([this](char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total)
         {
-            onMqttMessage(topic, payload, properties, len, index, total);
+            // onMqttMessage(topic, payload, properties, len, index, total);
             m_callback(topic, payload, len);
         });
 
