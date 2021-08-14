@@ -51,8 +51,8 @@ namespace office
         m_buttonDoAct(false)
         // m_handle(handle)     // m_handle is not a member, must be initialized in its own class
     {
-        Serial.println("start of officeGPIO constructor ===================");
-        // Serial.printf("start of officeGPIO constructor for controlPin: %d, handle: %d\n", controlPin, handle.c_str());
+        _PRINTLN("start of officeGPIO constructor ===================");
+        // _PRINTF("start of officeGPIO constructor for controlPin: %d, handle: %d\n", controlPin, handle.c_str());
         // initializing handler
         m_handle = handle;
         m_currentState = true;        // specific for my need, GPIO device is active low
@@ -68,11 +68,11 @@ namespace office
         {
             ///TODO: Print serial error message
             //maybe static_assert
-            Serial.println("Error[controlPin], GPIO setup will not complete!!!");
+            _PRINTLN("Error[controlPin], GPIO setup will not complete!!!");
             return;
         }
 
-        Serial.printf("gpio pin: %d, m_type: %d, handle: %s\n",controlPin, bool(type),handle.c_str());
+        _PRINTF("gpio pin: %d, m_type: %d, handle: %s\n",controlPin, bool(type),handle.c_str());
 
         //default state for device is off
         // switchOff();
@@ -82,12 +82,12 @@ namespace office
             if(canUsePin(m_toggelButton.value()))
             {
                 alreadyUsedGPIOs.push_back(m_toggelButton.value());
-                Serial.printf("ToggelButton is set to pin: %d\n", m_toggelButton.value());
+                _PRINTF("ToggelButton is set to pin: %d\n", m_toggelButton.value());
                 pinMode(m_toggelButton.value(), internalResistor);
             }
             else
             {
-                Serial.println("Error[m_toggelButton], GPIO setup will not complete!!!");
+                _PRINTLN("Error[m_toggelButton], GPIO setup will not complete!!!");
             }
         }
 
@@ -102,7 +102,7 @@ namespace office
         //     return true;
         // });
 
-        Serial.println("end of officeGPIO constructor ===================");
+        _PRINTLN("end of officeGPIO constructor ===================");
     }
 
     bool officeGPIO::canUsePin(const uint8_t& newPin) const
@@ -112,7 +112,7 @@ namespace office
         {
             if(newPin == pin)
             {
-                Serial.printf("Pin number: %d is already used!\n", newPin);
+                _PRINTF("Pin number: %d is already used!\n", newPin);
                 // pin is already being used so you can't use it
                 return false;
             }
@@ -124,13 +124,13 @@ namespace office
         {
             if(oneValidPin == newPin)
             {
-                Serial.printf("Pin number: %d can be used.\n", newPin);
+                _PRINTF("Pin number: %d can be used.\n", newPin);
                 // the pin was found.
                 return true;
             }
         }
 
-        Serial.printf("Pin number: %d is not valid!\n", newPin);
+        _PRINTF("Pin number: %d is not valid!\n", newPin);
         // pin is not used but it was invalid
         return false;
     }
@@ -146,7 +146,7 @@ namespace office
         {
             m_currentState = true;
         }
-        Serial.printf("[switchOn]setting GPIO: %d[%s] state to: %d\n", m_controlPin, m_handle.c_str(), m_currentState);
+        _PRINTF("[switchOn]setting GPIO: %d[%s] state to: %d\n", m_controlPin, m_handle.c_str(), m_currentState);
         Debug.printf("[switchOn]setting GPIO: %d[%s] state to: %d\n", m_controlPin, m_handle.c_str(), m_currentState);
         digitalWrite(m_controlPin, m_currentState);
     }
@@ -161,14 +161,14 @@ namespace office
         {
             m_currentState = false;
         }
-        Serial.printf("[switchOff]setting GPIO: %d[%s] state to: %d\n", m_controlPin, m_handle.c_str(), m_currentState);
+        _PRINTF("[switchOff]setting GPIO: %d[%s] state to: %d\n", m_controlPin, m_handle.c_str(), m_currentState);
         Debug.printf("[switchOff]setting GPIO: %d[%s] state to: %d\n", m_controlPin, m_handle.c_str(), m_currentState);
         digitalWrite(m_controlPin, m_currentState);
     }
 
     void officeGPIO::toggel()
     {
-        Serial.printf("Toggeling pin %d[%s] from state %d to %d\n",
+        _PRINTF("Toggeling pin %d[%s] from state %d to %d\n",
                         m_controlPin, m_handle.c_str(), m_currentState, !m_currentState);
         Debug.printf("Toggeling pin %d[%s] from state %d to %d\n",
                         m_controlPin, m_handle.c_str(), m_currentState, !m_currentState);
@@ -191,7 +191,7 @@ namespace office
             break;
 
         default:
-            Serial.println("UNKOWN ACTION, DISCARDING!");
+            _PRINTLN("UNKOWN ACTION, DISCARDING!");
             break;
         }
     }
@@ -201,7 +201,7 @@ namespace office
         // if this GPIO device is was not set for a toggle pin.
         if(!m_toggelButton)
         {
-            // Serial.printf("device %s connected to pin: %d, with type m_type: %d, has not toggle pin!!\n",handle.c_str(),controlPin,bool(type));
+            // _PRINTF("device %s connected to pin: %d, with type m_type: %d, has not toggle pin!!\n",handle.c_str(),controlPin,bool(type));
             return;
         }
 
@@ -217,7 +217,7 @@ namespace office
             {
                 m_buttonDoAct = false;
 
-                Serial.printf("Button Pressed(GPIO%d) for %s, toggeling state.", m_toggelButton.value(), m_handle.c_str());
+                _PRINTF("Button Pressed(GPIO%d) for %s, toggeling state.", m_toggelButton.value(), m_handle.c_str());
                 toggel();
 
                 for(auto& oneClient : mqttClients)

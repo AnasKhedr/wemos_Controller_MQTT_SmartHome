@@ -54,24 +54,24 @@ namespace mqtt
 
     bool mqttClient::init()
     {
-        Serial.printf("[mqttClient] client ID: %s\n", CLIENTID);
+        _PRINTF("[mqttClient] client ID: %s\n", CLIENTID);
 
         if (!m_mqttClient.connected())
         {
-            Serial.printf("[mqttClient] Connecting to MQTT broker: %s on port: %d\n", m_brokerIp.c_str(), MQTTPORT);
+            _PRINTF("[mqttClient] Connecting to MQTT broker: %s on port: %d\n", m_brokerIp.c_str(), MQTTPORT);
 
             yield();
             m_mqttClient.connect();
             if (m_mqttClient.connected())
             {
                 yield();
-                Serial.printf("connected to %s, subscribing.\n", CLIENTID);
+                _PRINTF("connected to %s, subscribing.\n", CLIENTID);
                 // m_pubSubClient.publish("/home/bathroom/", "connected");
                 // // if(m_pubSubClient.subscribe("#"))
                 // if(m_pubSubClient.subscribe(m_subscriptionTopic.c_str()))
                 // {
                 //     yield();
-                //     Serial.printf("[mqttClient] connected to %s and subscribed to topic %s.\n",m_brokerIp.c_str(),
+                //     _PRINTF("[mqttClient] connected to %s and subscribed to topic %s.\n",m_brokerIp.c_str(),
                 //                     m_subscriptionTopic.c_str());
                 //     isBrokerInitialized = true;
                 //     return true;
@@ -79,7 +79,7 @@ namespace mqtt
                 // else
                 // {
                 //     yield();
-                //     Serial.printf("[mqttClient] connected to %s but failed subscribed to topic %s.\n",m_brokerIp.c_str(),
+                //     _PRINTF("[mqttClient] connected to %s but failed subscribed to topic %s.\n",m_brokerIp.c_str(),
                 //                     m_subscriptionTopic.c_str());
                 //     return false;
                 // }
@@ -87,12 +87,12 @@ namespace mqtt
             else
             {
                 yield();
-                Serial.print("[mqttClient] failed to connect to port  with state:\n");
+                _PRINT("[mqttClient] failed to connect to port  with state:\n");
                 m_mqttClient.connect();
-                // Serial.print("failed, rc= ");
-                // Serial.println(m_pubSubClient.state());
+                // _PRINT("failed, rc= ");
+                // _PRINTLN(m_pubSubClient.state());
                 // ///ERROR: this line casues the crash.
-                // // Serial.printf("[mqttClient] failed to connect to %s port %s with state: %s\n", m_brokerIp.c_str(),
+                // // _PRINTF("[mqttClient] failed to connect to %s port %s with state: %s\n", m_brokerIp.c_str(),
                 // //                     MQTTPORT, helper::toString(m_pubSubClient.state()));
                 // return false;
                 // // delay(2000);
@@ -108,21 +108,21 @@ namespace mqtt
         // if the ESP was disconnected, then attempt to reconnect.
         if (!m_mqttClient.connected())
         {
-            // Serial.printf("connection state to: %s  is: %d\n", m_brokerIp.c_str(), m_pubSubClient.connected());
+            // _PRINTF("connection state to: %s  is: %d\n", m_brokerIp.c_str(), m_pubSubClient.connected());
             static uint8_t numberOfRetries = 0;
             unsigned long now = millis();
 
             // if 5 seconds have passed since the last attempt
             if ((now - m_lastReconnectAttempt) > MQTTRECONNECTIONINTERVALS)
             {
-                Serial.printf("Attempting to reconnect to broker: %s\n", m_brokerIp.c_str());
+                _PRINTF("Attempting to reconnect to broker: %s\n", m_brokerIp.c_str());
                 numberOfRetries++;
                 m_lastReconnectAttempt = now;
                 // Attempt to reconnect
                 if (reconnect())
                 {
                     returnValue = true;
-                    Serial.println("Reconnected successfully.");
+                    _PRINTLN("Reconnected successfully.");
                     m_lastReconnectAttempt = 0;
                     numberOfRetries = 0;
                 }
@@ -131,14 +131,14 @@ namespace mqtt
                     returnValue = false;
                     if(numberOfRetries > MQTTLOOPERCONNECTRETRIES)
                     {
-                        Serial.printf("Max retries: %d reached for reconnection with %s, resetting ....\n",
+                        _PRINTF("Max retries: %d reached for reconnection with %s, resetting ....\n",
                                         MQTTLOOPERCONNECTRETRIES, m_brokerIp.c_str());
                         ESP.restart();
                     }
                     else
                     {
                         now = millis();
-                        Serial.printf("Failed to reconnect retry #: %d, retrying again in %d seconds.\n", numberOfRetries, MQTTRECONNECTIONINTERVALS/1000);
+                        _PRINTF("Failed to reconnect retry #: %d, retrying again in %d seconds.\n", numberOfRetries, MQTTRECONNECTIONINTERVALS/1000);
                     }
                 }
             }
@@ -166,7 +166,7 @@ namespace mqtt
         }
         else
         {
-            Serial.printf("Broker: %s not connected, skipping.\n", m_brokerIp.c_str());
+            _PRINTF("Broker: %s not connected, skipping.\n", m_brokerIp.c_str());
         }
     }
 
@@ -177,14 +177,14 @@ namespace mqtt
 
     void mqttClient::publishState(const std::string& topic, const std::string& payload)
     {
-        Serial.printf("Publishing state, topic: %s, payload: %s.\n",topic.c_str() , payload.c_str());
+        _PRINTF("Publishing state, topic: %s, payload: %s.\n",topic.c_str() , payload.c_str());
         if(m_mqttClient.connected())
         {
             m_mqttClient.publish(topic.c_str(), 0, true, payload.c_str());
         }
         else
         {
-            Serial.printf("Broker: %s not connected, skipping.\n", m_brokerIp.c_str());
+            _PRINTF("Broker: %s not connected, skipping.\n", m_brokerIp.c_str());
         }
     }
 
@@ -192,18 +192,18 @@ namespace mqtt
     {
         if(m_mqttClient.connected())
         {
-            Serial.printf("Publishing state, topic: %s, payload: %d\n",topic.c_str() , state);
+            _PRINTF("Publishing state, topic: %s, payload: %d\n",topic.c_str() , state);
             m_mqttClient.publish(topic.c_str(), 0, true, std::to_string(state).c_str());
         }
         else
         {
-            Serial.printf("Broker: %s not connected, skipping.\n", m_brokerIp.c_str());
+            _PRINTF("Broker: %s not connected, skipping.\n", m_brokerIp.c_str());
         }
     }
 
     bool mqttClient::reconnect()
     {
-        Serial.println("attempting to re-connect.");
+        _PRINTLN("attempting to re-connect.");
         m_mqttClient.connect();
 
         return m_mqttClient.connected();
@@ -211,7 +211,7 @@ namespace mqtt
 
     void mqttClient::onMqttDisconnect(AsyncMqttClientDisconnectReason reason)
     {
-        Serial.println("Disconnected from MQTT.");
+        _PRINTLN("Disconnected from MQTT.");
         m_isConnected = false;
     }
 
@@ -219,44 +219,44 @@ namespace mqtt
     {
         m_isConnected = true;
 
-        Serial.println("Connected to MQTT.");
-        Serial.print("Session present: ");
-        Serial.println(sessionPresent);
+        _PRINTLN("Connected to MQTT.");
+        _PRINT("Session present: ");
+        _PRINTLN(sessionPresent);
         uint16_t packetIdSub = m_mqttClient.subscribe(m_subscriptionTopic.c_str(), 0);
-        Serial.print("Subscribing at QoS 0, packetId: ");
-        Serial.println(packetIdSub);
+        _PRINT("Subscribing at QoS 0, packetId: ");
+        _PRINTLN(packetIdSub);
         m_mqttClient.publish("/home/bathroom/", 0, false, "connected");
     }
 
     void mqttClient::onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total)
     {
-        Serial.println("Publish received.");
-        Serial.print("  topic: ");
-        Serial.println(topic);
-        Serial.print("  qos: ");
-        Serial.println(properties.qos);
-        Serial.print("  dup: ");
-        Serial.println(properties.dup);
-        Serial.print("  retain: ");
-        Serial.println(properties.retain);
-        Serial.print("  len: ");
-        Serial.println(len);
-        Serial.print("  index: ");
-        Serial.println(index);
-        Serial.print("  total: ");
-        Serial.println(total);
+        _PRINTLN("Publish received.");
+        _PRINT("  topic: ");
+        _PRINTLN(topic);
+        _PRINT("  qos: ");
+        _PRINTLN(properties.qos);
+        _PRINT("  dup: ");
+        _PRINTLN(properties.dup);
+        _PRINT("  retain: ");
+        _PRINTLN(properties.retain);
+        _PRINT("  len: ");
+        _PRINTLN(len);
+        _PRINT("  index: ");
+        _PRINTLN(index);
+        _PRINT("  total: ");
+        _PRINTLN(total);
         std::string message(payload,len);
-        Serial.printf("  payload: %s\n", message.c_str());
+        _PRINTF("  payload: %s\n", message.c_str());
     }
 
     void mqttCallback(char *topic, char *payload, size_t length)
     {
-        Serial.print("Message arrived [");
-        Serial.print(topic);
-        Serial.print("] ");
+        _PRINT("Message arrived [");
+        _PRINT(topic);
+        _PRINT("] ");
         std::string message(payload, length);
-        Serial.print(message.c_str());
-        Serial.println("\n--------------");
+        _PRINT(message.c_str());
+        _PRINTLN("\n--------------");
     }
 
 }       // namespace mqtt

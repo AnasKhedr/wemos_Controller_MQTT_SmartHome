@@ -60,6 +60,7 @@ constexpr float bitToVolt = (0.1875F/1000);
 #define MQTTINITCONNECTRETRIES   5
 
 #define CLIENTID "ESP8266Client-Office"
+#define HOST_NAME "office"
 
 //---------------------------------------------------------------------------
 //! \brief 
