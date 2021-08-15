@@ -225,7 +225,7 @@ namespace mqtt
         uint16_t packetIdSub = m_mqttClient.subscribe(m_subscriptionTopic.c_str(), 0);
         _PRINT("Subscribing at QoS 0, packetId: ");
         _PRINTLN(packetIdSub);
-        m_mqttClient.publish("/home/bathroom/", 0, false, "connected");
+        m_mqttClient.publish("/home/office/", 0, false, "connected");
     }
 
     void mqttClient::onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total)

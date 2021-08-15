@@ -26,7 +26,6 @@ void setup()
     Debug.begin("RemoteDebug");
     Debug.setResetCmdEnabled(true); // Enable the reset command
     Debug.showProfiler(true); // To show profiler - time between messages of Debug
-    debugA("This is a any (always showed) - var x\n");
 }
 
 void loop()

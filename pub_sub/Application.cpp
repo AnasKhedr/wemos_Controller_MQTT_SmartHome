@@ -200,6 +200,8 @@ void Application::run()
     m_timerTasks.tick();
     m_wifiManager.process();
 
+    updateSensorsReadings();
+
     // checking messages form all brokers
     for(auto&& oneClient : m_mqttClients)
     {
@@ -261,12 +263,10 @@ void Application::updateSensorsReadings()
         while((m_temperature == NAN) && (counter < 250));
 
         m_humidity = m_dhtSensor.getHumidity();
-        _PRINTF("Interval have passed or #retries: %d, updateing Temperature: %f C and Humidity: %f%% ",
+        _PRINTF("Interval have passed or #retries: %d, updateing Temperature: %f C and Humidity: %f%%\n",
                             counter, m_temperature, m_humidity);
         // _PRINTF("mq4Analog: %f, mq2Analog: %f\n", m_MQ4Sensor.readAnalogValue(), m_MQ2Sensor.readAnalogValue());
-        Debug.printf("Interval have passed or #retries: %d, updateing Temperature: %f C and Humidity: %f%%\n",
-                            counter, m_temperature, m_humidity);
-        debugA("Sending reading to broker\n");
+
 
         if(m_temperature == NAN)
         {
@@ -284,8 +284,6 @@ void Application::updateSensorsReadings()
             if((m_temperature != NAN))
             {
                 _PRINTLN("Sending readings to Nymea.");
-                debugA("Sending readings to Nymea.\n");
-                Debug.print("Sending readings to Nymea 2\n");
 
                 //DHT11 readings
                 oneClient->publish(std::string(officeInfoData)+"temperature", std::to_string(m_temperature));

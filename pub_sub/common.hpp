@@ -23,7 +23,7 @@
 #define NEERLIGHTPIN D1
 #define FARLIGHTPIN D2
 #define DOORLIGHTPIN 3      // GPIO3 -> Rx
-#define ABLEEKLIGHTPIN D8
+#define ABLEEKLIGHTPIN 1    // GPIO1 -> Tx
 
 // buttons pins
 #define MAINLIGHTBUTTONPIN D5
