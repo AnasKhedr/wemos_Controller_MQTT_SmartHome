@@ -62,11 +62,11 @@ namespace helper
 
     void printMqttMessage(const std::string& topic, const std::string message)
     {
-        Serial.print("Message arrived [");
-        Serial.print(topic.c_str());
-        Serial.print("] ");
-        Serial.print(message.c_str());
-        Serial.println("\n--------------");
+        _PRINT("Message arrived [");
+        _PRINT(topic.c_str());
+        _PRINT("] ");
+        _PRINT(message.c_str());
+        _PRINTLN("\n--------------");
     }
 
     float converTempToNymea(float temperature)

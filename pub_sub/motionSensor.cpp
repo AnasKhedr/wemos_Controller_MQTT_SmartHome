@@ -24,7 +24,8 @@ RCLWSensor::RCLWSensor(const uint8_t& sensorStatePin) :
     m_isEnabled(true),
     m_didMotionSensorTurnOnLight(false)
 {
-    Serial.printf("Motion Sensor Pin is set to: %d\n", sensorStatePin);
+    // this is called before anything else is called
+    // _PRINTF("Motion Sensor Pin is set to: %d\n", sensorStatePin);
     pinMode(m_sensorStatePin, INPUT_PULLUP);
 }
 
@@ -56,10 +57,10 @@ void RCLWSensor::controlLight(std::vector<std::shared_ptr<mqtt::mqttClient>>& mq
     {
         // if the sensor detets motion
         // and the light state is off
-        // Serial.printf("Motion reading from Pin[%d]: %d\n", m_sensorStatePin, readDigitalValue());
+        // _PRINTF("Motion reading from Pin[%d]: %d\n", m_sensorStatePin, readDigitalValue());
         if(readDigitalValue() && (m_didMotionSensorTurnOnLight == false))
         {
-            Serial.println("Motion detected turning on the Light");
+            _PRINTLN("Motion detected turning on the Light");
             m_motionDetectedTime = millis();
             m_didMotionSensorTurnOnLight = true;
 
@@ -72,7 +73,7 @@ void RCLWSensor::controlLight(std::vector<std::shared_ptr<mqtt::mqttClient>>& mq
             if(m_didMotionSensorTurnOnLight &&
                 ((millis() - m_motionDetectedTime) > m_motionSensorLightActiveTime))
             {
-                Serial.printf("Motion is no longer detected for %dms, turning off the light.\n",
+                _PRINTF("Motion is no longer detected for %dms, turning off the light.\n",
                                 m_motionSensorLightActiveTime);
                 m_didMotionSensorTurnOnLight = false;
                 m_lightControlPin->switchOff();

@@ -55,6 +55,7 @@ constexpr float bitToVolt = (0.1875F/1000);
 #define MQTTINITCONNECTRETRIES   5
 
 #define CLIENTID "ESP8266Client-Bathroom"
+#define HOST_NAME "bathroom"
 //---------------------------------------------------------------------------
 //! \brief 
 //! \note   - auto will translate to char*

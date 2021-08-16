@@ -28,8 +28,7 @@
 #include "motionSensor.hpp"
 #include "common.hpp"
 
-#include <ESP8266WiFi.h>
-#include <Ticker.h>
+// #include <Ticker.h>
 #include <AsyncMqttClient.h>
 
 //---------------------------------------------------------------------------

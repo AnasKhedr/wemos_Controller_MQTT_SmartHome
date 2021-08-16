@@ -17,8 +17,8 @@ app::Application myApp;
 
 void setup()
 {
-    myApp.addClient(TESTBROKER);
-    // myApp.addClient(PI_4_1_bedroom);
+    // myApp.addClient(TESTBROKER);
+    myApp.addClient(PI_4_1_bedroom);
     // myApp.addClient("192.168.0.100");
     // myApp.addClient(PI_4_2_kitchen);
     myApp.init();
