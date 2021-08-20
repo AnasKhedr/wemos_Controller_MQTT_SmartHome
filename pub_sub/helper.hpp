@@ -25,6 +25,11 @@
 
 
 static RemoteDebug Debug;
+
+#define _PRINTF(f_, ...) Serial.printf((f_), __VA_ARGS__); Debug.printf((f_), __VA_ARGS__); Debug.handle();
+#define _PRINTLN(f_) Serial.println((f_)); Debug.println((f_)); Debug.handle();
+#define _PRINT(f_) Serial.print((f_)); Debug.print((f_)); Debug.handle();
+
 namespace helper
 {
     //---------------------------------------------------------------------------

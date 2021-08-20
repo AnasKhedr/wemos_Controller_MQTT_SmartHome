@@ -51,6 +51,7 @@ namespace reception
         m_buttonDoAct(false)
         // m_handle(handle)     // m_handle is not a member, must be initialized in its own class
     {
+        _PRINTLN("start of officeGPIO constructor ===================");
         // initializing handler
         m_handle = handle;
         m_currentState = true;        // specific for my need, GPIO device is active low
@@ -59,7 +60,8 @@ namespace reception
         if(canUsePin(controlPin))
         {
             //inserting GPIO into used list
-            alreadyUsedGPIOs.push_back(controlPin);
+            alreadyUsedGPIOs.push_back(m_controlPin);
+            pinMode(m_controlPin, OUTPUT);
         }
         else
         {
@@ -68,17 +70,22 @@ namespace reception
             return;
         }
 
-        Serial.println("start of receptionGPIO constructor  ********************");
-        Serial.printf("gpio pin: %d, m_type: %d, handle: %s\n",controlPin,bool(type),handle.c_str());
+        _PRINTF("gpio pin: %d, m_type: %d, handle: %s\n", controlPin, bool(type),handle.c_str());
 
-
-        Serial.println("GPIOtype::activeLow -------------------");
-        pinMode(m_controlPin, OUTPUT);
         //default state for device is off
-        switchOff();
+        // switchOff();
         if(m_toggelButton)
         {
-            pinMode(m_toggelButton.value(), internalResistor);
+            if(canUsePin(m_toggelButton.value()))
+            {
+                alreadyUsedGPIOs.push_back(m_toggelButton.value());
+                _PRINTF("ToggelButton is set to pin: %d\n", m_toggelButton.value());
+                pinMode(m_toggelButton.value(), internalResistor);
+            }
+            else
+            {
+                _PRINTLN("Error[m_toggelButton], GPIO setup will not complete!!!");
+            }
         }
 
         // Application::m_timerTasks;
@@ -92,7 +99,7 @@ namespace reception
         //     return true;
         // });
 
-        Serial.println("end of receptionGPIO constructor ===================");
+        _PRINTLN("end of receptionGPIO constructor ===================");
     }
 
     bool receptionGPIO::canUsePin(const uint8_t& newPin) const
@@ -102,7 +109,7 @@ namespace reception
         {
             if(newPin == pin)
             {
-                Serial.printf("Pin number: %d is already used!\n", newPin);
+                _PRINTF("Pin number: %d is already used!\n", newPin);
                 // pin is already being used so you can't use it
                 return false;
             }
@@ -114,13 +121,13 @@ namespace reception
         {
             if(oneValidPin == newPin)
             {
-                Serial.printf("Pin number: %d can be used.\n", newPin);
+                _PRINTF("Pin number: %d can be used.\n", newPin);
                 // the pin was found.
                 return true;
             }
         }
 
-        Serial.printf("Pin number: %d is not valid!\n", newPin);
+        _PRINTF("Pin number: %d is not valid!\n", newPin);
         // pin is not used but it was invalid
         return false;
     }
@@ -136,7 +143,7 @@ namespace reception
         {
             m_currentState = true;
         }
-        Serial.printf("[switchOn]setting GPIO: %d[%s] state to: %d\n", m_controlPin, m_handle.c_str(), m_currentState);
+        _PRINTF("[switchOn]setting GPIO: %d[%s] state to: %d\n", m_controlPin, m_handle.c_str(), m_currentState);
         Debug.printf("[switchOn]setting GPIO: %d[%s] state to: %d\n", m_controlPin, m_handle.c_str(), m_currentState);
         digitalWrite(m_controlPin, m_currentState);
     }
@@ -151,14 +158,14 @@ namespace reception
         {
             m_currentState = false;
         }
-        Serial.printf("[switchOff]setting GPIO: %d[%s] state to: %d\n", m_controlPin, m_handle.c_str(), m_currentState);
+        _PRINTF("[switchOff]setting GPIO: %d[%s] state to: %d\n", m_controlPin, m_handle.c_str(), m_currentState);
         Debug.printf("[switchOff]setting GPIO: %d[%s] state to: %d\n", m_controlPin, m_handle.c_str(), m_currentState);
         digitalWrite(m_controlPin, m_currentState);
     }
 
     void receptionGPIO::toggel()
     {
-        Serial.printf("Toggeling pin %d[%s] from state %d to %d\n",
+        _PRINTF("Toggeling pin %d[%s] from state %d to %d\n",
                         m_controlPin, m_handle.c_str(), m_currentState, !m_currentState);
         Debug.printf("Toggeling pin %d[%s] from state %d to %d\n",
                         m_controlPin, m_handle.c_str(), m_currentState, !m_currentState);
@@ -181,7 +188,7 @@ namespace reception
             break;
 
         default:
-            Serial.println("UNKOWN ACTION, DISCARDING!");
+            _PRINTLN("UNKOWN ACTION, DISCARDING!");
             break;
         }
     }
@@ -191,7 +198,7 @@ namespace reception
         // if this GPIO device is was not set for a toggle pin.
         if(!m_toggelButton)
         {
-            // Serial.printf("device %s connected to pin: %d, with type m_type: %d, has not toggle pin!!\n",handle.c_str(),controlPin,bool(type));
+            // _PRINTF("device %s connected to pin: %d, with type m_type: %d, has not toggle pin!!\n",handle.c_str(),controlPin,bool(type));
             return;
         }
 
@@ -207,12 +214,20 @@ namespace reception
             {
                 m_buttonDoAct = false;
 
-                Serial.printf("Button Pressed(GPIO%d) for %s, toggeling state.", m_toggelButton.value(), m_handle.c_str());
+                _PRINTF("Button Pressed(GPIO%d) for %s, toggeling state.", m_toggelButton.value(), m_handle.c_str());
                 toggel();
 
                 for(auto& oneClient : mqttClients)
                 {
-                    oneClient->publishState(receptionInfoData+m_handle, helper::actions::TOGGEL);
+                    if(reception::GPIOtype::activeHigh == m_type)
+                    {
+                        oneClient->publishState(receptionInfoData+m_handle, m_currentState);
+                    }
+                    else    //activeLow
+                    {
+                        // invert the state because 0 means on and 1 means off
+                        oneClient->publishState(receptionInfoData+m_handle, !m_currentState);
+                    }
                 }
             }
 

@@ -16,6 +16,8 @@
 #include "Application.hpp"
 #include <optional>
 #include <EEPROM.h>
+#include <DNSServer.h>
+#include <ESP8266mDNS.h>
 
 //---------------------------------------------------------------------------
 // Functions
@@ -30,17 +32,37 @@ Application::Application() :
     // m_MQ4Sensor(std::nullopt, m_ads, ADSA1, INPUT),
     // m_MQ2Sensor(std::nullopt, m_ads, ADSA2, INPUT)
 {
-    m_wifiManager.setSTAStaticIPConfig(DEVICEIP, IPAddress(192,168,1,1), IPAddress(255,255,255,0)); // optional DNS 4th argument
-    m_wifiManager.setWiFiAutoReconnect(true);
-    m_wifiManager.setShowInfoErase(true);
-
-    //initling EEPROM
-    EEPROM.begin(EEPROMSIZE);
-
     //starting up the serial
     Serial.begin(115200);
     delay(10);
     Serial.println("start of Application");
+
+    m_wifiManager.setSTAStaticIPConfig(DEVICEIP, IPAddress(192,168,1,1), IPAddress(255,255,255,0)); // optional DNS 4th argument
+    m_wifiManager.setWiFiAutoReconnect(true);
+    m_wifiManager.setShowInfoErase(true);
+
+        MDNS.addService("telnet", "tcp", 23);
+    Debug.begin(HOST_NAME); // Initiaze the telnet server
+    Debug.setResetCmdEnabled(true); // Enable the reset command
+    Debug.showProfiler(true); // Profiler (Good to measure times, to optimize codes)
+    Debug.showColors(true); // Colors
+    Debug.handle();
+    delay(10);
+
+        String hostNameWifi = HOST_NAME;
+    hostNameWifi.concat(".local");
+    WiFi.hostname(hostNameWifi);
+
+    if (MDNS.begin(HOST_NAME)) {
+        Serial.printf("* MDNS responder started. Hostname -> %s\n", HOST_NAME);
+    }
+    delay(10);
+
+
+    //initling EEPROM
+    EEPROM.begin(EEPROMSIZE);
+
+
 
     // m_ads.setGain(GAIN_TWOTHIRDS);  // 2/3x gain +/- 6.144V  1 bit = 3mV      0.1875mV (default)
     // m_wifiManager.resetSettings();
@@ -56,7 +78,7 @@ Application::Application() :
 
 void Application::addClient(std::string brokerIp)
 {
-    Serial.printf("adding broker ip: %s to list.\n", brokerIp.c_str());
+    _PRINTF("adding broker ip: %s to list.\n", brokerIp.c_str());
     m_brokerIps.push_back(brokerIp);
 }
 
@@ -64,35 +86,36 @@ void Application::init()
 {
     readFromEEPROM(PESISTANTEEPROMIDX, g_persistantData);
 
-    Serial.printf("g_persistantData data in EEPROM - mq2 threshold: %f, mq4 threshold: %f, MotionEnable: %d,"
+    _PRINTF("g_persistantData data in EEPROM - mq2 threshold: %f, mq4 threshold: %f, MotionEnable: %d,"
                     " sensorsReadingsUpdateInterval: %u, motionSensorLightActiveTime: %u\n",
                     g_persistantData.MQ2AnalogThrethhold, g_persistantData.MQ4AnalogThrethhold, g_persistantData.MotionEnable,
                     g_persistantData.sensorsReadingsUpdateInterval, g_persistantData.motionSensorLightActiveTime);
 
-    Serial.println("connecting to WIFI network. Blocking execution until connected!");
+    _PRINTLN("connecting to WIFI network. Blocking execution until connected!");
     // m_wifiManager.autoConnect(m_wifiManager.getDefaultAPName().c_str(), "1234567809");
-    Serial.println("connected to WIFI network.");
-    // m_wifiManager.setConfigPortalTimeout(120);
+    _PRINTLN("connected to WIFI network.");
+    m_wifiManager.setConfigPortalTimeout(60);
     m_wifiManager.setConfigPortalBlocking(false);
     m_wifiManager.setWiFiAutoReconnect(true);
-    m_wifiManager.autoConnect();
+    m_wifiManager.autoConnect("Reception-ESP");
+    m_wifiManager.setHostname("Reception-ESP");
     m_wifiManager.setConnectTimeout(300);           // how much time to wait in AP mode before returning to try connecting to saved wifi
     m_wifiManager.setSaveConnectTimeout(300);       // I think it's how much time to keep trying to search for and connect to saved wifis
 
-    // Serial.println("initializing DHT11 and ADS1115 Sensors");
+    // _PRINTLN("initializing DHT11 and ADS1115 Sensors");
     // m_dhtSensor.setup(DHT11PIN, DHTesp::DHT11);
     // m_ads.begin();
-    // Serial.println("done initializing dht11 and ADS1115.");
+    // _PRINTLN("done initializing dht11 and ADS1115.");
 
     // creating clients to all the different brokerIps
     for(auto& oneIp : m_brokerIps)
     {
-        Serial.printf("creating a new client to broker: %s\n", oneIp.c_str());
+        _PRINTF("creating a new client to broker: %s\n", oneIp.c_str());
         // subscribe to the commands that we should act on only
         m_mqttClients.push_back(std::make_shared<mqtt::mqttClient>(oneIp, std::string{receptionInputCommands}+"#",
-            [this](char *topic, uint8_t *payload, unsigned int length) -> void
+            [this](char *topic, char *payload, size_t length) -> void
             {
-                std::string message(reinterpret_cast<char*>(payload), length);
+                std::string message(payload, length);
                 helper::printMqttMessage(topic, message);
                 onMqttMessage(topic, message);
             }));
@@ -105,16 +128,16 @@ void Application::init()
     // at least connect to one broker
     while(!m_brokerStatus && (counter < MQTTINITCONNECTRETRIES))
     {
+        _PRINTLN("start initializing m_mqttClients");
         counter++;
         for(auto& oneClient : m_mqttClients)
         {
-            Serial.println("start initializing over m_mqttClients");
             m_brokerStatus |= oneClient->init();
         }
 
         if(!m_brokerStatus)
         {
-            Serial.print("Failed to connect to all brokers, retrying in 2 seconds.\n");
+            _PRINT("Failed to connect to all brokers, retrying in 2 seconds.\n");
 
             //delay the 2 seconds in a semi-blocking way
             for(uint8_t i=0; i<200; i++)
@@ -125,10 +148,15 @@ void Application::init()
                 delay(10);
             }
         }
+        else
+        {
+            _PRINTLN("Succeeded in connecting to one of the mqtt clients, Will try to connect to unconnected(if any) brokers during runtime.");
+            break;
+        }
 
         if(counter >= MQTTINITCONNECTRETRIES)
         {
-            Serial.print("Failed to connect to all brokers, retrying during runtime\n");
+            _PRINT("Failed to connect to all brokers, retrying during runtime\n");
         }
     }
 }
@@ -138,7 +166,7 @@ void Application::onMqttMessage(const std::string& topic, const std::string& mes
     std::string room;
     std::string device;
     splitRoomAndSensor(topic, room, device);
-    Serial.printf("room: %s, device: %s, and message: %s\n", room.c_str(), device.c_str(), message.c_str());
+    _PRINTF("room: %s, device: %s, and message: %s\n", room.c_str(), device.c_str(), message.c_str());
 
     //if the received topic is for office
     if(room.compare(receptionInputCommands) == 0)
@@ -146,7 +174,7 @@ void Application::onMqttMessage(const std::string& topic, const std::string& mes
         if(m_ControlGPIOsList.find(device) == m_ControlGPIOsList.end())
         {
             checkForConfigUpdate(device, message);
-            // Serial.printf("Device: %s does not exist!\n", device.c_str());
+            // _PRINTF("Device: %s does not exist!\n", device.c_str());
             return;
         }
         else
@@ -156,14 +184,14 @@ void Application::onMqttMessage(const std::string& topic, const std::string& mes
     }
     else
     {
-        Serial.println("Message is not a office control message, ignoring message.");
+        _PRINTLN("Message is not a office control message, ignoring message.");
     }
 
 }
 
 void Application::run()
 {
-    // Serial.println("run instance");
+    // _PRINTLN("run instance");
     m_timerTasks.tick();
     m_wifiManager.process();
 
@@ -171,7 +199,7 @@ void Application::run()
     for(auto&& oneClient : m_mqttClients)
     {
         m_brokerStatus |= oneClient->loop();
-        // Serial.println("publishing.");
+        // _PRINTLN("publishing.");
         // oneClient->publish("Test",std::to_string(x).c_str());
     }
 
@@ -181,6 +209,7 @@ void Application::run()
     {
         it->second->checkButton(m_mqttClients);
     }
+    Debug.handle();
 
 }
 
@@ -202,13 +231,13 @@ void Application::splitRoomAndSensor(const std::string fullTopic, std::string& r
 //     {
 //         // if(!m_brokerStatus)
 //         // {
-//         //     Serial.printf("(sensorsReadingsUpdateInterval) %dms have passed, but Working in offline mode, skipping updateing sensors State.\n",
+//         //     _PRINTF("(sensorsReadingsUpdateInterval) %dms have passed, but Working in offline mode, skipping updateing sensors State.\n",
 //         //                 g_persistantData.sensorsReadingsUpdateInterval);
 //         //     return;
 //         // }
 
 //         debugV("* This is a message of debug level VERBOSE");
-//         Serial.printf("(sensorsReadingsUpdateInterval) %dms have passed, sending readings.\n",
+//         _PRINTF("(sensorsReadingsUpdateInterval) %dms have passed, sending readings.\n",
 //                         g_persistantData.sensorsReadingsUpdateInterval);
 //         Debug.printf("(sensorsReadingsUpdateInterval) %dms have passed, sending readings.\n",
 //                         g_persistantData.sensorsReadingsUpdateInterval);
@@ -221,35 +250,35 @@ void Application::splitRoomAndSensor(const std::string fullTopic, std::string& r
 //         {
 //             counter++;
 //             m_temperature = m_dhtSensor.getTemperature();
-//             // Serial.printf("Reading humidity\n");
+//             // _PRINTF("Reading humidity\n");
 //             delay(1);
 //         }
 //         while((m_temperature == NAN) && (counter < 250));
 
 //         m_humidity = m_dhtSensor.getHumidity();
-//         Serial.printf("Interval have passed or #retries: %d, updateing Temperature: %f C and Humidity: %f%% ",
+//         _PRINTF("Interval have passed or #retries: %d, updateing Temperature: %f C and Humidity: %f%% ",
 //                             counter, m_temperature, m_humidity);
-//         // Serial.printf("mq4Analog: %f, mq2Analog: %f\n", m_MQ4Sensor.readAnalogValue(), m_MQ2Sensor.readAnalogValue());
+//         // _PRINTF("mq4Analog: %f, mq2Analog: %f\n", m_MQ4Sensor.readAnalogValue(), m_MQ2Sensor.readAnalogValue());
 //         Debug.printf("Interval have passed or #retries: %d, updateing Temperature: %f C and Humidity: %f%%\n",
 //                             counter, m_temperature, m_humidity);
 //         debugA("Sending reading to broker\n");
 
 //         if(m_temperature == NAN)
 //         {
-//             Serial.println("Failed to get DHT11 reading, skipping updateing.");
+//             _PRINTLN("Failed to get DHT11 reading, skipping updateing.");
 //         }
 //         else
 //         {
 //             m_temperature = helper::converTempToNymea(m_temperature);
 //         }
 
-//                 // Serial.println("y");
+//                 // _PRINTLN("y");
 //         for(auto&& oneClient : m_mqttClients)
 //         {
-//                 // Serial.println("x");
+//                 // _PRINTLN("x");
 //             if((m_temperature != NAN))
 //             {
-//                 Serial.println("Sending readings to Nymea.");
+//                 _PRINTLN("Sending readings to Nymea.");
 //                 debugA("Sending readings to Nymea.\n");
 //                 Debug.print("Sending readings to Nymea 2\n");
 
@@ -267,7 +296,7 @@ void Application::splitRoomAndSensor(const std::string fullTopic, std::string& r
 //             }
 //             else
 //             {
-//                 Serial.println("Failed to get DHT11 readings after 250 retries!");
+//                 _PRINTLN("Failed to get DHT11 readings after 250 retries!");
 //             }
 //         }
 //     }
@@ -292,7 +321,7 @@ void Application::splitRoomAndSensor(const std::string fullTopic, std::string& r
 //             (m_MQ2Sensor.readAnalogValue() >= g_persistantData.MQ2AnalogThrethhold))
 //         {
 //             // if the buzzer is off and there is a gas leakage
-//             Serial.println("Detected Dangerous gas levels, starting the buzzer.");
+//             _PRINTLN("Detected Dangerous gas levels, starting the buzzer.");
 //             m_ControlGPIOsList["buzzer"]->switchOn();
 
 //             // update Nymea(broker) if connected
@@ -312,7 +341,7 @@ void Application::splitRoomAndSensor(const std::string fullTopic, std::string& r
 //         else if(buzzerState == helper::ON)
 //         {
 //             // buzzer is on but there is no gas leakage
-//             Serial.println("gas level is normal, stopping the buzzer.");
+//             _PRINTLN("gas level is normal, stopping the buzzer.");
 //             m_ControlGPIOsList["buzzer"]->switchOff();
 
 //             // update Nymea(broker) if connected
@@ -340,32 +369,32 @@ void Application::checkForConfigUpdate(const std::string& command, const std::st
 {
     if(command == "reset")
     {
-        Serial.println("Received reset command.");
+        _PRINTLN("Received reset command.");
         m_wifiManager.resetSettings();
     }
     else if(command == "MQ2ThretholdUpdate")
     {
-        Serial.printf("update MQ2 Threthold command with data: %s\n", message.c_str());
+        _PRINTF("update MQ2 Threthold command with data: %s\n", message.c_str());
         g_persistantData.MQ2AnalogThrethhold = std::stof(message);
         writeToEEPROM(PESISTANTEEPROMIDX, g_persistantData);
     }
     else if(command == "MQ4ThretholdUpdate")
     {
-        Serial.printf("update MQ4 Threthold command with data: %s\n", message.c_str());
+        _PRINTF("update MQ4 Threthold command with data: %s\n", message.c_str());
         g_persistantData.MQ4AnalogThrethhold = std::stof(message);
         writeToEEPROM(PESISTANTEEPROMIDX, g_persistantData);
     }
     else if(command == "MothionSensorEnable")
     {
         bool enable = std::stoi(message);
-        Serial.printf("update motion sensor enable command with data: %s\n", message.c_str());
+        _PRINTF("update motion sensor enable command with data: %s\n", message.c_str());
         g_persistantData.MotionEnable = enable;
         writeToEEPROM(PESISTANTEEPROMIDX, g_persistantData);
     }
     else if(command == "sensorsReadingsUpdateInterval")
     {
         int sensorsInterval = std::stoi(message);
-        Serial.printf("update the send interval for sensors readings command received with data: %s\n", message.c_str());
+        _PRINTF("update the send interval for sensors readings command received with data: %s\n", message.c_str());
         g_persistantData.sensorsReadingsUpdateInterval = sensorsInterval * 1000UL;  // 1000 to convert from seconds to ms
         writeToEEPROM(PESISTANTEEPROMIDX, g_persistantData);
     }
@@ -373,7 +402,7 @@ void Application::checkForConfigUpdate(const std::string& command, const std::st
     {
         int motionInterval = std::stoi(message);
         g_persistantData.motionSensorLightActiveTime = motionInterval * 1000UL;     // 1000 to convert from seconds to ms
-        Serial.printf("update the motion sensor turn on time command received with data: %d\n",
+        _PRINTF("update the motion sensor turn on time command received with data: %d\n",
                          g_persistantData.motionSensorLightActiveTime);
 
         writeToEEPROM(PESISTANTEEPROMIDX, g_persistantData);
@@ -391,7 +420,7 @@ void Application::writeToEEPROM(int address, T xdata)
     EEPROM.put(address, xdata);
     EEPROM.commit();
 
-    Serial.printf("Write to Persistance storage - mq2 threshold: %f, mq4 threshold: %f, MotionEnable: %d,"
+    _PRINTF("Write to Persistance storage - mq2 threshold: %f, mq4 threshold: %f, MotionEnable: %d,"
                     " sensorsReadingsUpdateInterval: %u, motionSensorLightActiveTime: %u\n",
                     xdata.MQ2AnalogThrethhold, xdata.MQ4AnalogThrethhold, xdata.MotionEnable,
                     xdata.sensorsReadingsUpdateInterval, xdata.motionSensorLightActiveTime);
@@ -402,7 +431,7 @@ void Application::readFromEEPROM(int address, T& xdata)
 {
     EEPROM.get(address, xdata);
 
-    Serial.printf("Read from Persistance storage - mq2 threshold: %f, mq4 threshold: %f, MotionEnable: %d,"
+    _PRINTF("Read from Persistance storage - mq2 threshold: %f, mq4 threshold: %f, MotionEnable: %d,"
                     " sensorsReadingsUpdateInterval: %u, motionSensorLightActiveTime: %u\n",
                     xdata.MQ2AnalogThrethhold, xdata.MQ4AnalogThrethhold, xdata.MotionEnable,
                     xdata.sensorsReadingsUpdateInterval, xdata.motionSensorLightActiveTime);
