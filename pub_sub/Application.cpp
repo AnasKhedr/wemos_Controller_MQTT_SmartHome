@@ -70,7 +70,7 @@ Application::Application() :
     ///TODO: something is fishy about the creation of those objects, check is
     m_ControlGPIOsList["mainLight"] = std::make_shared<office::officeGPIO>(MAINLIGHTPIN, office::GPIOtype::activeLow,"mainLight",MAINLIGHTBUTTONPIN);
     m_ControlGPIOsList["neerLight"] = std::make_shared<office::officeGPIO>(NEERLIGHTPIN, office::GPIOtype::activeLow,"neerLight",NEERLIGHTBUTTONPIN);
-    m_ControlGPIOsList["farLight"] = std::make_shared<office::officeGPIO>(FARLIGHTPIN, office::GPIOtype::activeHigh,"farLight",FARBUTTONPIN);
+    m_ControlGPIOsList["farLight"] = std::make_shared<office::officeGPIO>(FARLIGHTPIN, office::GPIOtype::activeLow,"farLight",FARBUTTONPIN);
     m_ControlGPIOsList["ableekLight"] = std::make_shared<office::officeGPIO>(ABLEEKLIGHTPIN, office::GPIOtype::activeLow,"ableekLight", ABLEEKBUTTONPIN);
     m_ControlGPIOsList["doorLight"] = std::make_shared<office::officeGPIO>(DOORLIGHTPIN, office::GPIOtype::activeLow,"doorLight", DOORBUTTONPIN);
 
