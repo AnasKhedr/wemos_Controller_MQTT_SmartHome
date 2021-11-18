@@ -73,9 +73,10 @@ namespace reception
         _PRINTF("gpio pin: %d, m_type: %d, handle: %s\n", controlPin, bool(type),handle.c_str());
 
         //default state for device is off
-        // switchOff();
         if(m_toggelButton)
         {
+            // if it has a button to press then it's a light
+            switchOff();
             if(canUsePin(m_toggelButton.value()))
             {
                 alreadyUsedGPIOs.push_back(m_toggelButton.value());
@@ -86,6 +87,12 @@ namespace reception
             {
                 _PRINTLN("Error[m_toggelButton], GPIO setup will not complete!!!");
             }
+        }
+        else
+        {
+            // if it doesn't have a button then it's a switch (بريزه)
+            //always turn on switches
+            switchOn();
         }
 
         // Application::m_timerTasks;
@@ -159,7 +166,6 @@ namespace reception
             m_currentState = false;
         }
         _PRINTF("[switchOff]setting GPIO: %d[%s] state to: %d\n", m_controlPin, m_handle.c_str(), m_currentState);
-        Debug.printf("[switchOff]setting GPIO: %d[%s] state to: %d\n", m_controlPin, m_handle.c_str(), m_currentState);
         digitalWrite(m_controlPin, m_currentState);
     }
 
