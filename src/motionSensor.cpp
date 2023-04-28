@@ -1,28 +1,25 @@
-//---------------------------------------------------------------------------
 //! \file motionSensor.cpp
 //! \authors Anas Khedr
-//! \brief 
+//! \brief
 //! \version 0.1
 //! \date 29-Jun-2021
 //! \copyright This work is licensed under a Creative Commons Attribution 4.0 International License. Copyright (c) 2021
-//! 
+//!
 
 //---------------------------------------------------------------------------
 // Includes
 //---------------------------------------------------------------------------
 #include "motionSensor.hpp"
 
-
 //---------------------------------------------------------------------------
 // Functions
 //---------------------------------------------------------------------------
 
 // RCLWSensor::RCLWSensor(const uint8_t& sensorStatePin, bathRoom::bathRoomGPIO& lightControlPin) :
-RCLWSensor::RCLWSensor(const uint8_t& sensorStatePin) :
-    m_sensorStatePin(sensorStatePin),
-    // m_lightControlPin(lightControlPin),
-    m_isEnabled(true),
-    m_didMotionSensorTurnOnLight(false)
+RCLWSensor::RCLWSensor(const uint8_t& sensorStatePin)
+    : m_sensorStatePin(sensorStatePin),
+      // m_lightControlPin(lightControlPin),
+      m_isEnabled(true), m_didMotionSensorTurnOnLight(false)
 {
     _PRINTF("Motion Sensor Pin is set to: %d\n", sensorStatePin);
     pinMode(m_sensorStatePin, INPUT_PULLUP);
@@ -52,12 +49,12 @@ void RCLWSensor::controlLight(std::vector<std::shared_ptr<mqtt::mqttClient>>& mq
 {
     updateMQTTClientsWithSensorState(mqttClients);
 
-    if(m_isEnabled)
+    if (m_isEnabled)
     {
         // if the sensor detets motion
         // and the light state is off
         // _PRINTF("Motion reading from Pin[%d]: %d\n", m_sensorStatePin, readDigitalValue());
-        if(readDigitalValue() && (m_didMotionSensorTurnOnLight == false))
+        if (readDigitalValue() && (m_didMotionSensorTurnOnLight == false))
         {
             _PRINTLN("Motion detected turning on the Light");
             m_motionDetectedTime = millis();
@@ -69,11 +66,9 @@ void RCLWSensor::controlLight(std::vector<std::shared_ptr<mqtt::mqttClient>>& mq
         {
             // make sure you only turn off the light if it was turned on by sensor
             // and time for turning off passed
-            if(m_didMotionSensorTurnOnLight &&
-                ((millis() - m_motionDetectedTime) > m_motionSensorLightActiveTime))
+            if (m_didMotionSensorTurnOnLight && ((millis() - m_motionDetectedTime) > m_motionSensorLightActiveTime))
             {
-                _PRINTF("Motion is no longer detected for %dms, turning off the light.\n",
-                                m_motionSensorLightActiveTime);
+                _PRINTF("Motion is no longer detected for %lu ms, turning off the light.\n", m_motionSensorLightActiveTime);
                 m_didMotionSensorTurnOnLight = false;
                 m_lightControlPin->switchOff();
             }
@@ -90,15 +85,15 @@ void RCLWSensor::updateMQTTClientsWithSensorState(std::vector<std::shared_ptr<mq
     c_currentState = readDigitalValue();
 
     // if state hasn't chaged since last read then do nothing
-    if(c_currentState == c_lastState)
+    if (c_currentState == c_lastState)
     {
         return;
     }
     else
     {
-        for(auto&& oneClient : mqttClients)
+        for (auto&& oneClient : mqttClients)
         {
-            oneClient->publish(std::string(officeInfoData)+"mothionState", std::to_string(c_currentState));
+            oneClient->publish(std::string(officeInfoData) + "mothionState", std::to_string(c_currentState));
         }
     }
 }
