@@ -9,7 +9,7 @@
 //---------------------------------------------------------------------------
 // Includes
 //---------------------------------------------------------------------------
-#include "relayDevice.hpp"
+#include "preferals/relay_device/relayDevice.hpp"
 #include "Application.hpp"
 
 

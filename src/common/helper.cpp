@@ -1,4 +1,3 @@
-//---------------------------------------------------------------------------
 //! \file helper.cpp
 //! \authors Anas Khedr
 //! \brief file containing helper functions
@@ -7,23 +6,21 @@
 //! \copyright This work is licensed under a Creative Commons Attribution 4.0 International License. Copyright (c) 2021
 //!
 
-
 //---------------------------------------------------------------------------
 // Includes
 //---------------------------------------------------------------------------
+#include "common/helper.hpp"
+#include <EEPROM.h>
 #include <random>
 #include <string>
-#include <EEPROM.h>
-#include "helper.hpp"
-
 
 namespace helper
 {
 
-    std::string toString(int mqttFailedState)
+std::string toString(int mqttFailedState)
+{
+    switch (mqttFailedState)
     {
-        switch (mqttFailedState)
-        {
         case MQTT_CONNECTION_TIMEOUT:
             return "MQTT_CONNECTION_TIMEOUT";
             break;
@@ -57,21 +54,21 @@ namespace helper
 
         default:
             return "Unknow error(you shouldnot see this)!";
-        }
     }
+}
 
-    void printMqttMessage(const std::string& topic, const std::string message)
-    {
-        Serial.print("Message arrived [");
-        Serial.print(topic.c_str());
-        Serial.print("] ");
-        Serial.print(message.c_str());
-        Serial.println("\n--------------");
-    }
+void printMqttMessage(const std::string& topic, const std::string message)
+{
+    Serial.print("Message arrived [");
+    Serial.print(topic.c_str());
+    Serial.print("] ");
+    Serial.print(message.c_str());
+    Serial.println("\n--------------");
+}
 
-    // class logger
-    // {
-    //     std::string operation<<()
-    // };
+// class logger
+// {
+//     std::string operation<<()
+// };
 
-}   // namespace helper
+} // namespace helper

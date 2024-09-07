@@ -17,9 +17,9 @@
 #include <vector>
 #include <optional>             //I'd rather use boot::optional but Ubuntu is a shitty OS
 #include <Arduino.h>            //the compiler will faile to regonize pinMode and OUTPUT without Arduino.h
-#include "ISimpleDevice.hpp"
-#include "helper.hpp"
-#include "mqttClient.hpp"
+#include "interface/ISimpleDevice.hpp"
+#include "common/helper.hpp"
+#include "network/mqttClient.hpp"
 
 
 //---------------------------------------------------------------------------
