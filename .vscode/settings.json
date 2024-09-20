@@ -63,7 +63,7 @@
         "streambuf": "cpp",
         "cinttypes": "cpp",
         "typeinfo": "cpp",
-        "map": "cpp"
+        "map": "cpp",
     },
     "C_Cpp.intelliSenseEngine": "disabled",
     "clangd.detectExtensionConflicts": false,
@@ -76,4 +76,11 @@
         "gpio",
         "RCLW"
     ],
+    "python.autoComplete.extraPaths": [
+        "${workspaceFolder}/sources/poky/bitbake/lib",
+        "${workspaceFolder}\\sources\\poky\\meta\\lib"
+    ],
+    // "clangd.arguments": [
+    //     "--compile-commands-dir=${workspaceFolder}\\.pio\\build\\nodemcuv2\\.pio\\compile_commands.json"
+    // ],
 }

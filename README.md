@@ -9,7 +9,14 @@ wemos front                |  wemos back
 
 ## How to setup environment for build
 
-1. install [python3](https://python.org/)
+check <http://www.steves-internet-guide.com/install-mosquitto-broker/>
+PS C:\Program Files\mosquitto> .\mosquitto.exe -c .\mosquitto.conf -v
+PS C:\Program Files\mosquitto> .\mosquitto_pub.exe -t /home/Room/office/command/mainLight -m "1" -h 192.168.1.11
+PS C:\Program Files\mosquitto> .\mosquitto_sub.exe -t '#' -h localhost -v
+
+be careful <https://randomnerdtutorials.com/esp8266-pinout-reference-gpios/>
+
+1. install [python3](https://python.org/)  --> `sudo apt install python3-venv`
 2. install [arduino](https://www.arduino.cc)
 
     - on windows use url: <https://support.arduino.cc/hc/en-us/articles/360019833020-Download-and-install-Arduino-IDE>  
@@ -22,7 +29,7 @@ wemos front                |  wemos back
     :fire: Tip: I highly recommend installing arduino IDE first as it't the native IDE and installing it provide a lot of support for vs-code extension if you intend to use it.
     - from vs code [arduino extension](https://marketplace.visualstudio.com/items?itemName=vsciot-vscode.vscode-arduino):
         - hit F1 then select "Arduino: Board Manager"
-        - on the down right corner of the shown window you'll see "Additional URLs" click it then add the following url from the [esp board](https://github.com/esp8266/Arduino#installing-with-boards-manager) instructions page(the current url is https://arduino.esp8266.com/stable/package_esp8266com_index.json).
+        - on the down right corner of the shown window you'll see "Additional URLs" click it then add the following url from the [esp board](https://github.com/esp8266/Arduino#installing-with-boards-manager) instructions page(the current url is <https://arduino.esp8266.com/stable/package_esp8266com_index.json>).
         - press "Refresh Package Indexes" in the top left coroner of "Arduino Board Manager window"
 
 4. using your preferred Arduino Board manager, search for "esp" and install "esp8266 by ESP8266 Community". choosing any version should be fine but I'm using 3.0.0
@@ -44,20 +51,20 @@ wemos front                |  wemos back
 
 And that's it. :tada: :tada:  
 after you finish building you'll see at the end all the libraries that Arduino used to build the project like this:
-> Using library ESP8266WiFi at version 1.0 in folder: C:\Users\zero_\AppData\Local\Arduino15\packages\esp8266\hardware\esp8266\3.0.0\libraries\ESP8266WiFi 
-Using library DNSServer at version 1.1.1 in folder: C:\Users\zero_\AppData\Local\Arduino15\packages\esp8266\hardware\esp8266\3.0.0\libraries\DNSServer 
-Using library ESP8266WebServer at version 1.0 in folder: C:\Users\zero_\AppData\Local\Arduino15\packages\esp8266\hardware\esp8266\3.0.0\libraries\ESP8266WebServer 
-Using library WiFiManager at version 2.0.3-alpha in folder: C:\Users\zero_\Documents\Arduino\libraries\WiFiManager 
-Using library PubSubClient at version 2.8 in folder: C:\Users\zero_\Documents\Arduino\libraries\PubSubClient 
-Using library RemoteDebug at version 2.1.2 in folder: C:\Users\zero_\Documents\Arduino\libraries\RemoteDebug 
-Using library AsyncMqttClient at version 0.9.0 in folder: C:\Users\zero_\Documents\Arduino\libraries\async-mqtt-client 
-Using library ESPAsyncTCP at version 1.2.2 in folder: C:\Users\zero_\Documents\Arduino\libraries\ESPAsyncTCP 
-Using library arduino-timer at version 2.3.0 in folder: C:\Users\zero_\Documents\Arduino\libraries\arduino-timer 
-Using library Adafruit ADS1X15 at version 1.1.1 in folder: C:\Users\zero_\Documents\Arduino\libraries\Adafruit_ADS1X15 
-Using library Wire at version 1.0 in folder: C:\Users\zero_\AppData\Local\Arduino15\packages\esp8266\hardware\esp8266\3.0.0\libraries\Wire 
-Using library DHT sensor library for ESPx at version 1.18 in folder: C:\Users\zero_\Documents\Arduino\libraries\DHT_sensor_library_for_ESPx 
-Using library EEPROM at version 1.0 in folder: C:\Users\zero_\AppData\Local\Arduino15\packages\esp8266\hardware\esp8266\3.0.0\libraries\EEPROM 
-Using library ESP8266mDNS at version 1.2 in folder: C:\Users\zero_\AppData\Local\Arduino15\packages\esp8266\hardware\esp8266\3.0.0\libraries\ESP8266mDNS 
+> Using library ESP8266WiFi at version 1.0 in folder: C:\Users\zero_\AppData\Local\Arduino15\packages\esp8266\hardware\esp8266\3.0.0\libraries\ESP8266WiFi
+Using library DNSServer at version 1.1.1 in folder: C:\Users\zero_\AppData\Local\Arduino15\packages\esp8266\hardware\esp8266\3.0.0\libraries\DNSServer
+Using library ESP8266WebServer at version 1.0 in folder: C:\Users\zero_\AppData\Local\Arduino15\packages\esp8266\hardware\esp8266\3.0.0\libraries\ESP8266WebServer
+Using library WiFiManager at version 2.0.3-alpha in folder: C:\Users\zero_\Documents\Arduino\libraries\WiFiManager
+Using library PubSubClient at version 2.8 in folder: C:\Users\zero_\Documents\Arduino\libraries\PubSubClient
+Using library RemoteDebug at version 2.1.2 in folder: C:\Users\zero_\Documents\Arduino\libraries\RemoteDebug
+Using library AsyncMqttClient at version 0.9.0 in folder: C:\Users\zero_\Documents\Arduino\libraries\async-mqtt-client
+Using library ESPAsyncTCP at version 1.2.2 in folder: C:\Users\zero_\Documents\Arduino\libraries\ESPAsyncTCP
+Using library arduino-timer at version 2.3.0 in folder: C:\Users\zero_\Documents\Arduino\libraries\arduino-timer
+Using library Adafruit ADS1X15 at version 1.1.1 in folder: C:\Users\zero_\Documents\Arduino\libraries\Adafruit_ADS1X15
+Using library Wire at version 1.0 in folder: C:\Users\zero_\AppData\Local\Arduino15\packages\esp8266\hardware\esp8266\3.0.0\libraries\Wire
+Using library DHT sensor library for ESPx at version 1.18 in folder: C:\Users\zero_\Documents\Arduino\libraries\DHT_sensor_library_for_ESPx
+Using library EEPROM at version 1.0 in folder: C:\Users\zero_\AppData\Local\Arduino15\packages\esp8266\hardware\esp8266\3.0.0\libraries\EEPROM
+Using library ESP8266mDNS at version 1.2 in folder: C:\Users\zero_\AppData\Local\Arduino15\packages\esp8266\hardware\esp8266\3.0.0\libraries\ESP8266mDNS
 "C:\\Users\\zero_\\AppData\\Local\\Arduino15\\packages\\esp8266\\tools\\xtensa-lx106-elf-gcc\\3.0.0-newlib4.0.0-gnu23-48f7b08/bin/xtensa-lx106-elf-size" -A "E:\\Smart Home\\wemos_Controller_MQTT_SmartHome\\build/pub_sub.ino.elf"
 Sketch uses 415681 bytes (39%) of program storage space. Maximum is 1044464 bytes.
 Global variables use 38936 bytes (47%) of dynamic memory, leaving 42984 bytes for local variables. Maximum is 81920 bytes.
