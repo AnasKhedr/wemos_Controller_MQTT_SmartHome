@@ -33,11 +33,7 @@ Application::Application()
     Serial.println("start of Application");
 
     m_ads.setGain(GAIN_TWOTHIRDS); // 2/3x gain +/- 6.144V  1 bit = 3mV      0.1875mV (default)
-    // m_wifiManager.resetSettings();
-    // m_wifiManager.setAPStaticIPConfig(IPAddress(192,168,1,110), IPAddress(192,168,1,1), IPAddress(255,255,255,0));
 
-    // factory
-    /// TODO: something is fishy about the creation of those objects, check is
     m_ControlGPIOsList["mainLight"] =
         std::make_shared<bathRoom::bathRoomGPIO>(MAINLIGHTPIN, bathRoom::GPIOtype::activeLow, "mainLight", MAINLIGHTBUTTONPIN);
     m_ControlGPIOsList["washbasineLight"] = std::make_shared<bathRoom::bathRoomGPIO>(WASHBASINELIGHTPIN, bathRoom::GPIOtype::activeLow,
@@ -153,7 +149,6 @@ void Application::run()
 
     checkHazeredSensors();
     updateSensorsReadings();
-    checkMothion();
     checkMothion();
 }
 

@@ -65,7 +65,7 @@
         "typeinfo": "cpp",
         "map": "cpp",
     },
-    "C_Cpp.intelliSenseEngine": "disabled",
+    "editor.renderWhitespace": "all",
     "clangd.detectExtensionConflicts": false,
     "clangd.inactiveRegions.opacity": 0.55,
     "clang-format.executable": "/usr/bin/clang-format-12",

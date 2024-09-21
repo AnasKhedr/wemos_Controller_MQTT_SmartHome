@@ -48,11 +48,9 @@ namespace bathRoom
         m_controlPin(controlPin),
         m_toggelButton(toggelButton),
         m_type(type)
-        // m_handle(handle)     // m_handle is not a member, must be initialized in its own class
     {
         // initializing handler
         m_handle = handle;
-        m_currentState = true;        // specific for my need, GPIO device is active low
 
         // verify if we can use this pin or not
         if(canUsePin(controlPin))
@@ -78,17 +76,7 @@ namespace bathRoom
             pinMode(m_toggelButton.value(), internalResistor);
         }
 
-        // Application::m_timerTasks;
-        // m_buttonCheck.every(100, [&](void*) -> bool
-        // Application::m_timerTasks.every(100, [&](void*) -> bool
-        // {
-        //     if(digitalRead(m_toggelButton) == LOW)
-        //     {
-        //         toggel();
-        //     }
-        //     return true;
-        // });
-
+        switchOff(); // default state is off
         Serial.println("end of bathRoomGPIO constructor ===================");
     }
 
