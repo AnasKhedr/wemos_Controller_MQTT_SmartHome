@@ -32,7 +32,6 @@ namespace office
 officeGPIO::officeGPIO(const uint8_t controlPin, const GPIOtype type, const std::string handle, const std::optional<uint8_t> toggelButton,
                        const uint8_t internalResistor)
     : m_controlPin(controlPin), m_toggelButton(toggelButton), m_type(type), m_buttonDoAct(false)
-// m_handle(handle)     // m_handle is not a member, must be initialized in its own class
 {
     _PRINTLN("start of officeGPIO constructor ===================");
     _PRINTF("in: %d , out: %d\n", toggelButton.value(), controlPin);
@@ -59,9 +58,6 @@ officeGPIO::officeGPIO(const uint8_t controlPin, const GPIOtype type, const std:
 
     _PRINTF("gpio pin: %d, m_type: %d, handle: %s\n", controlPin, bool(type), handle.c_str());
 
-    // default state for device is off
-    // switchOff();
-
     if (m_toggelButton)
     {
         if (canUsePin(m_toggelButton.value()))
@@ -78,17 +74,6 @@ officeGPIO::officeGPIO(const uint8_t controlPin, const GPIOtype type, const std:
 
     // set initial state for button (which is off)
     switchOff();
-
-    // Application::m_timerTasks;
-    // m_buttonCheck.every(100, [&](void*) -> bool
-    // Application::m_timerTasks.every(100, [&](void*) -> bool
-    // {
-    //     if(digitalRead(m_toggelButton) == LOW)
-    //     {
-    //         toggel();
-    //     }
-    //     return true;
-    // });
 
     _PRINTLN("end of officeGPIO constructor ===================");
 }
