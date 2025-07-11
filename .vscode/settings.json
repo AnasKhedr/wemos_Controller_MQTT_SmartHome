@@ -64,5 +64,12 @@
         "cinttypes": "cpp",
         "typeinfo": "cpp",
         "map": "cpp"
-    }
+    },
+    "clangd.arguments": [
+        "--compile-commands-dir=${workspaceFolder}\\.pio\\build",
+        "--completion-style=detailed",
+    ],
+    // "clang-format.executable": "C:\\Program Files\\LLVM\bin\\clang-format.exe",
+    "clang-format.executable": "clang-format.exe",
+    "clang-format.style": "${workspaceFolder}\\config\\.clang-format"
 }
