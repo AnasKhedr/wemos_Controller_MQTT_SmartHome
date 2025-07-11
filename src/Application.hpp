@@ -3,8 +3,7 @@
 //! \brief
 //! \version 0.1
 //! \date 29-May-2021
-//! \copyright This work is licensed under a Creative Commons Attribution 4.0
-//! International License. Copyright (c) 2021
+//! \copyright This work is licensed under a Creative Commons Attribution 4.0 International License. Copyright (c) 2021
 //!
 
 //---------------------------------------------------------------------------
@@ -68,17 +67,17 @@ private:
 
     //---------------------------------------------------------------------------
     //! \brief slits the topic to room and sensor
-    //! \details if the topic is /home/Room/bathroom/light1 then \p room will be
-    //! /home/Room/bathroom and \p sensor will be light1 \param fullTopic    --
-    //! [in]  the full topic received by mqtt \param room         -- [out] the
-    //! name of the room \param sensor       -- [out] the name of the sensor
+    //! \details if the topic is /home/Room/bathroom/light1 then \p room will be /home/Room/bathroom
+    //! and \p sensor will be light1
+    //! \param fullTopic    -- [in]  the full topic received by mqtt
+    //! \param room         -- [out] the name of the room
+    //! \param sensor       -- [out] the name of the sensor
     //!
     void splitRoomAndSensor(const std::string fullTopic, std::string& room, std::string& sensor);
 
     //---------------------------------------------------------------------------
-    //! \brief read DHT11, MQ4 and MQ2 sensor readings and send it to all
-    //! brokers on defined time interval
-    //! (g_persistantData.sensorsReadingsUpdateInterval in common.hpp)
+    //! \brief read DHT11, MQ4 and MQ2 sensor readings and send it to all brokers on defined
+    //! time interval (g_persistantData.sensorsReadingsUpdateInterval in common.hpp)
     //!
     void updateSensorsReadings();
 
@@ -130,8 +129,7 @@ private:
 
     WiFiManager m_wifiManager;
 
-    // source:
-    // https://chewett.co.uk/blog/1405/using-the-dht11-temperature-sensor-with-a-wemos-d1-mini-esp8266/
+    // source: https://chewett.co.uk/blog/1405/using-the-dht11-temperature-sensor-with-a-wemos-d1-mini-esp8266/
     DHTesp m_dhtSensor;
 
     float m_humidity;

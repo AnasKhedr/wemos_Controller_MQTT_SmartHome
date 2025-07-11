@@ -68,12 +68,21 @@
     "C_Cpp.intelliSenseEngine": "disabled",
     "clangd.detectExtensionConflicts": false,
     "clangd.inactiveRegions.opacity": 0.55,
-    "clang-format.executable": "/usr/bin/clang-format-12",
-    "clang-format.assumeFilename": "/home/akhedr/Workspace/wemos_Controller_MQTT_SmartHome/config/.clang-formal",
+    // for linux
+    // "clang-format.executable": "/usr/bin/clang-format-12",
+    // for windows
+    // "clang-format.executable": "C:\\Program Files\\LLVM\bin\\clang-format.exe",
+    "clang-format.executable": "clang-format.exe",
+    "clang-format.style": "${workspaceFolder}\\config\\.clang-format",
+    // "clang-format.assumeFilename": "/home/akhedr/Workspace/wemos_Controller_MQTT_SmartHome/config/.clang-formal",
     "editor.formatOnSave": true,
     "cSpell.words": [
         "Adafruit",
         "gpio",
         "RCLW"
+    ],
+    "clangd.arguments": [
+        "--compile-commands-dir=${workspaceFolder}\\.pio\\build",
+        "--completion-style=detailed",
     ],
 }
