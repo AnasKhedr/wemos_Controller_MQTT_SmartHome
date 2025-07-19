@@ -1,0 +1,26 @@
+name: Build PlatformIO project
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  pull_request:
+    types:
+      - labeled
+    branches:
+      - main
+      - 'release/*'
+
+jobs:
+  build:
+    if: contains(github.event.label.name, 'ci-check') || github.event.label.name == 'run-ci'
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout repository
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Setup PlatformIO in PATH
+      - name: Setup PlatformIO
+        uses: n-vr/setup-platformio-action@v1
+
+      # Build the PlatformIO project
+      - name: Build PlatformIO project
+        run: pio run
