@@ -1,6 +1,6 @@
 name: Build PlatformIO project
 on:
-  # Triggers the workflow on push or pull request events but only for the main branch
+  # Triggers the workflow on push or pull request events but only for the main branch or release
   pull_request:
     types:
       - labeled
@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    if: contains(github.event.label.name, 'ci-check') || github.event.label.name == 'run-ci'
+    if: contains(github.event.label.name, 'ci-check') || github.event.label.name == 'ci-check'
     runs-on: ubuntu-latest
     steps:
       # Checkout repository
